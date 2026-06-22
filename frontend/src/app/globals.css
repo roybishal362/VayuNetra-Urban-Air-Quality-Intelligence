@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-950 text-slate-100 antialiased;
+  font-feature-settings: "tnum" 1;
+}
+
+/* thin custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-ink-600 rounded-full;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@layer components {
+  .card {
+    @apply bg-ink-900/80 border border-ink-700 rounded-xl backdrop-blur-sm;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+}
+
+/* MapLibre popup + control theming to match the dark UI */
+.maplibregl-popup-content {
+  @apply bg-ink-850 text-slate-100 border border-ink-600 rounded-lg shadow-xl;
+  padding: 10px 12px;
+}
+.maplibregl-popup-tip {
+  border-top-color: #131c31 !important;
+  border-bottom-color: #131c31 !important;
+}
+.maplibregl-ctrl-group {
+  @apply bg-ink-850 border border-ink-600 !important;
+}
+.maplibregl-ctrl button {
+  filter: invert(1) hue-rotate(180deg);
+}
