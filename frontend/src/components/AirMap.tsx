@@ -78,15 +78,20 @@ export default function AirMap({ city, grid, attributions, selectedZoneId, onSel
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.addControl(new maplibregl.AttributionControl({ compact: true }));
 
-    map.on("load", () => {
-      map.addSource("grid", { type: "geojson", data: gridFC(null) });
-      map.addLayer({
-        id: "grid-fill", type: "fill", source: "grid",
-        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.45 },
-      });
+    // Idempotent so StrictMode double-mount / a missed 'load' can't leave the map un-ready.
+    const onReady = () => {
+      if (!map.getSource("grid")) {
+        map.addSource("grid", { type: "geojson", data: gridFC(null) });
+        map.addLayer({
+          id: "grid-fill", type: "fill", source: "grid",
+          paint: { "fill-color": ["get", "color"], "fill-opacity": 0.45 },
+        });
+      }
       map.resize();
       setReady(true);
-    });
+    };
+    map.on("load", onReady);
+    map.once("idle", onReady); // backstop if the 'load' event is missed
 
     // Fix the classic flexbox sizing race: resize whenever the container changes size.
     const ro = new ResizeObserver(() => map.resize());
