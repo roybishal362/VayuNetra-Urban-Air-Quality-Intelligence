@@ -34,6 +34,8 @@ interface Props {
   attributions: ZoneAttribution[];
   selectedZoneId: string | null;
   onSelectZone: (zoneId: string) => void;
+  industrial?: { lat: number; lon: number }[];
+  showIndustry?: boolean;
 }
 
 function cellPolygon(lat: number, lon: number, stepKm: number) {
@@ -57,7 +59,9 @@ function gridFC(grid: GridResponse | null): GeoJSON.FeatureCollection {
   };
 }
 
-export default function AirMap({ city, grid, attributions, selectedZoneId, onSelectZone }: Props) {
+export default function AirMap({
+  city, grid, attributions, selectedZoneId, onSelectZone, industrial, showIndustry,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -87,6 +91,16 @@ export default function AirMap({ city, grid, attributions, selectedZoneId, onSel
           paint: { "fill-color": ["get", "color"], "fill-opacity": 0.45 },
         });
       }
+      if (!map.getSource("industry")) {
+        map.addSource("industry", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        map.addLayer({
+          id: "industry", type: "circle", source: "industry",
+          paint: {
+            "circle-radius": 3.5, "circle-color": "#E67E22", "circle-opacity": 0.85,
+            "circle-stroke-width": 0.5, "circle-stroke-color": "#7c3a0f",
+          },
+        });
+      }
       map.resize();
       setReady(true);
     };
@@ -114,6 +128,20 @@ export default function AirMap({ city, grid, attributions, selectedZoneId, onSel
     if (!ready || !map) return;
     (map.getSource("grid") as maplibregl.GeoJSONSource | undefined)?.setData(gridFC(grid));
   }, [ready, grid]);
+
+  // industry overlay
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    const feats = (showIndustry && industrial)
+      ? industrial.map((p) => ({
+          type: "Feature" as const, properties: {},
+          geometry: { type: "Point" as const, coordinates: [p.lon, p.lat] },
+        }))
+      : [];
+    (map.getSource("industry") as maplibregl.GeoJSONSource | undefined)
+      ?.setData({ type: "FeatureCollection", features: feats });
+  }, [ready, industrial, showIndustry]);
 
   // zone HTML markers (no glyph dependency, full styling control)
   useEffect(() => {

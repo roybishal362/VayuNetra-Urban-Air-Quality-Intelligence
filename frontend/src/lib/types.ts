@@ -51,8 +51,27 @@ export interface ForecastMetrics {
   horizons: HorizonMetric[]; feature_importance: Record<string, number>;
 }
 
+export interface CityHealth {
+  total_population: number; exposed_population: number; severe_population: number;
+  vulnerable_sites_affected: number; avg_aqi: number; worst_category: string; note: string;
+}
+export interface Alert {
+  zone_id: string; zone_name: string; level: string; aqi: number; horizon_h: number; message: string;
+}
+export interface LandUse { industrial: LatLon[]; roads: LatLon[]; }
+
+export interface HistoryPoint { ts: string; pm25: number; aqi: number; category: string; color: string }
+export interface ZoneHistory { zone_id: string; now_ts: string; points: HistoryPoint[] }
+
+export interface SimulationResult {
+  zone_id: string; zone_name: string; source: string; source_label: string; reduction: number;
+  original_pm25: number; new_pm25: number; original_aqi: number; new_aqi: number; delta_aqi: number;
+  new_category: string; new_color: string;
+}
+
 export interface CityIntelligence {
   city_id: string; city_name: string; generated_at: string; now_ts: string; data_source: string;
   summary: string; forecasts: ZoneForecast[]; attributions: ZoneAttribution[];
   enforcement: EnforcementItem[]; advisories: AdvisoryItem[]; metrics?: ForecastMetrics;
+  landuse?: LandUse; health?: CityHealth; alerts: Alert[];
 }
