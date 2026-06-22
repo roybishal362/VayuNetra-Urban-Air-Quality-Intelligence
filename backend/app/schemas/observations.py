@@ -6,6 +6,13 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.schemas.air import FirePoint, Reading, WeatherPoint
+from app.schemas.geo import LatLon
+
+
+class LandUse(BaseModel):
+    """OSM-derived emission proxies used for hyperlocal downscaling."""
+    industrial: list[LatLon] = []
+    roads: list[LatLon] = []
 
 
 class ZoneSeries(BaseModel):
@@ -22,6 +29,7 @@ class CityObservations(BaseModel):
     source: str                    # "live" | "cache" | "snapshot"
     zones: list[ZoneSeries]
     fires: list[FirePoint]
+    landuse: LandUse | None = None
 
     def zone(self, zone_id: str) -> ZoneSeries | None:
         return next((z for z in self.zones if z.zone_id == zone_id), None)

@@ -12,6 +12,7 @@ from app.schemas.air import Reading
 from app.schemas.city import City
 from app.schemas.grid import GridCell, GridResponse
 from app.schemas.intelligence import CityIntelligence
+from app.services.downscale import factors_for
 
 _MAX_CELLS = 4000  # safety cap so a tiny step never explodes the payload
 
@@ -62,19 +63,25 @@ def build_aqi_grid(city: City, intel: CityIntelligence, layer: str = "current",
         dlat *= scale
         dlon *= scale
 
+    # build the coordinate lattice once
+    coords: list[tuple[float, float]] = []
+    lat = bbox.min_lat
+    while lat <= bbox.max_lat:
+        lon = bbox.min_lon
+        while lon <= bbox.max_lon:
+            coords.append((round(lat, 4), round(lon, 4)))
+            lon += dlon
+        lat += dlat
+
+    # land-use-regression downscaling factors (cached per city — spatial, time-independent)
+    factors = factors_for(city, intel.landuse, coords) if samples else []
+
     cells: list[GridCell] = []
-    if samples:
-        lat = bbox.min_lat
-        while lat <= bbox.max_lat:
-            lon = bbox.min_lon
-            while lon <= bbox.max_lon:
-                pm = max(0.0, _idw(lat, lon, samples))
-                res = compute_aqi(Reading(ts=intel.now_ts, pm25=pm))
-                if res:
-                    cells.append(GridCell(lat=round(lat, 4), lon=round(lon, 4),
-                                          aqi=res.aqi, category=res.category, color=res.color))
-                lon += dlon
-            lat += dlat
+    for (clat, clon), factor in zip(coords, factors):
+        pm = max(0.0, _idw(clat, clon, samples) * factor)
+        res = compute_aqi(Reading(ts=intel.now_ts, pm25=pm))
+        if res:
+            cells.append(GridCell(lat=clat, lon=clon, aqi=res.aqi, category=res.category, color=res.color))
 
     return GridResponse(city_id=city.id, layer=layer, horizon_h=horizon,
                         step_km=round(city.grid_step_km, 2), now_ts=intel.now_ts, cells=cells)

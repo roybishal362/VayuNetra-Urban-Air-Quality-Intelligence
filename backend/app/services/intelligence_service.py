@@ -88,6 +88,7 @@ def build_city_intelligence(city_id: str, mode: str = "snapshot") -> CityIntelli
         summary=_summary(city, attributions, enforcement, model.metrics),
         forecasts=forecasts, attributions=attributions,
         enforcement=enforcement, advisories=advisories, metrics=model.metrics,
+        landuse=obs.landuse,
     )
     log.info("[%s] intelligence built (%d zones, src=%s)", city_id, len(attributions), obs.source)
     return intel

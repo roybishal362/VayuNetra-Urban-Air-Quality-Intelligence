@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from app.schemas.attribution import ZoneAttribution
 from app.schemas.forecast import ForecastMetrics, ZoneForecast
+from app.schemas.observations import LandUse
 
 
 class AdvisoryItem(BaseModel):
@@ -53,3 +54,4 @@ class CityIntelligence(BaseModel):
     enforcement: list[EnforcementItem]
     advisories: list[AdvisoryItem]
     metrics: ForecastMetrics | None = None
+    landuse: LandUse | None = None

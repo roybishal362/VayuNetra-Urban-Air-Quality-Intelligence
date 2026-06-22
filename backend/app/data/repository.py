@@ -10,6 +10,7 @@ from app.core.logging import get_logger
 from app.data import snapshot
 from app.data.sources import firms
 from app.data.sources.openmeteo import fetch_air_quality, fetch_weather
+from app.data.sources.osm import fetch_landuse
 from app.domain.cities import get_city
 from app.schemas.city import City
 from app.schemas.observations import CityObservations, ZoneSeries
@@ -47,9 +48,14 @@ def _fetch_live(city: City, past_days: int, forecast_days: int) -> CityObservati
     grid = zones[0].readings
     now_ts = grid[-(forecast_hours + 1)].ts if len(grid) > forecast_hours else grid[-1].ts
     fires = _gather_fires(city, now_ts)
+    try:
+        landuse = fetch_landuse(city)
+    except Exception as exc:
+        log.warning("land-use fetch failed (%s); downscaling disabled", exc)
+        landuse = None
     return CityObservations(
         city_id=city.id, generated_at=datetime.now(), now_ts=now_ts,
-        forecast_hours=forecast_hours, source="live", zones=zones, fires=fires,
+        forecast_hours=forecast_hours, source="live", zones=zones, fires=fires, landuse=landuse,
     )
 
 

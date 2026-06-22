@@ -26,6 +26,7 @@ from app.schemas.attribution import Evidence, SourceContribution, ZoneAttributio
 from app.schemas.city import City
 from app.schemas.geo import LatLon, angular_diff, bearing_deg, haversine_km
 from app.schemas.observations import CityObservations
+from app.services.downscale import components_at
 
 log = get_logger("vayunetra.attribution")
 
@@ -113,6 +114,11 @@ def attribute_zone(obs: CityObservations, city: City, zone_id: str) -> ZoneAttri
     no2, so2, co, o3 = c.get("no2") or 0.0, c.get("so2") or 0.0, c.get("co") or 0.0, c.get("o3") or 0.0
     wind, blh, wdir = c.get("wind_speed") or 1.0, c.get("blh") or 500.0, c.get("wind_dir")
 
+    # Hyperlocal downscaling: lift PM toward nearby emission sources (roads / industry).
+    lu_factor, traffic_n, ind_n = components_at(city, obs.landuse, zone.center.lat, zone.center.lon)
+    pm25 *= lu_factor
+    pm10 *= lu_factor
+
     fire_score, fires_n, fire_dists = _upwind_fire_signal(zone.center, wdir, obs.fires, obs.now_ts)
 
     # --- indicators (0..3) ---
@@ -131,6 +137,11 @@ def attribute_zone(obs: CityObservations, city: City, zone_id: str) -> ZoneAttri
         "dust_construction": 1.6 * coarse_frac,
         "secondary": 0.5 + 0.3 * i_o3,
     }
+
+    # --- land-use modulation: roads -> traffic/dust, industry -> industrial ---
+    w["vehicular"] *= 1 + 0.5 * traffic_n
+    w["dust_construction"] *= 1 + 0.25 * traffic_n
+    w["industrial"] *= 1 + 0.7 * ind_n
 
     # --- meteorological modulation: stagnation amplifies local sources ---
     local_amp = _clip(1.4 - wind / 4.0, 0.75, 1.5) * _clip(500.0 / max(blh, 150.0), 0.85, 1.6)
@@ -164,7 +175,8 @@ def attribute_zone(obs: CityObservations, city: City, zone_id: str) -> ZoneAttri
     dominant = contributions[0]
     fires_modeled = any(getattr(f, "source", "") == "FIRMS-model" for f in obs.fires)
     evidence = _build_evidence(no2, so2, co, pm10, pm25, coarse_frac, i_no2, i_so2,
-                               fires_n, fire_dists, wdir, wind, blh, fires_modeled)
+                               fires_n, fire_dists, wdir, wind, blh, fires_modeled,
+                               traffic_n, ind_n)
     aqi = compute_aqi(Reading(ts=obs.now_ts, pm25=pm25, pm10=pm10, no2=no2, so2=so2, o3=o3, co=co))
 
     return ZoneAttribution(
@@ -179,7 +191,8 @@ def attribute_zone(obs: CityObservations, city: City, zone_id: str) -> ZoneAttri
 
 
 def _build_evidence(no2, so2, co, pm10, pm25, coarse_frac, i_no2, i_so2,
-                    fires_n, fire_dists, wdir, wind, blh, fires_modeled=False) -> list[Evidence]:
+                    fires_n, fire_dists, wdir, wind, blh, fires_modeled=False,
+                    traffic_n=0.0, ind_n=0.0) -> list[Evidence]:
     ev: list[Evidence] = []
     if i_no2 >= 0.8:
         ev.append(Evidence(signal="NO₂", detail=f"{no2:.0f} µg/m³ ({no2/_NO2_REF:.1f}× typical) — combustion/traffic",
@@ -199,6 +212,14 @@ def _build_evidence(no2, so2, co, pm10, pm25, coarse_frac, i_no2, i_so2,
     if wind < 1.5 or blh < 300:
         ev.append(Evidence(signal="Stagnation",
                            detail=f"wind {wind:.1f} m/s, boundary layer {blh:.0f} m — local accumulation",
+                           points_to="vehicular"))
+    if ind_n >= 0.4:
+        ev.append(Evidence(signal="Industrial proximity",
+                           detail="within ~2–3 km of mapped industrial areas",
+                           points_to="industrial"))
+    if traffic_n >= 0.55:
+        ev.append(Evidence(signal="Traffic density",
+                           detail="high arterial-road / urban-core density",
                            points_to="vehicular"))
     return ev
 
