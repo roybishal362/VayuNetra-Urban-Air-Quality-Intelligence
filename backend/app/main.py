@@ -1,6 +1,7 @@
 """VayuNetra API entrypoint. Routers are mounted as each subsystem comes online."""
 from __future__ import annotations
 
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -14,6 +15,22 @@ configure_logging()
 log = get_logger("vayunetra.api")
 
 
+def _warm_cache() -> None:
+    """Best-effort background warm-up: pre-build intelligence for cities whose model is
+    already trained. Never trains at boot (that would block) — only warms when artifacts exist."""
+    try:
+        from app.domain.cities import list_cities
+        from app.ml.forecast import ForecastModel
+        from app.services.intelligence_service import get_city_intelligence
+
+        for c in list_cities():
+            if ForecastModel.load(c.id) is not None:
+                get_city_intelligence(c.id)
+                log.info("warmed intelligence cache for %s", c.id)
+    except Exception as exc:
+        log.warning("cache warm failed: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info(
@@ -23,6 +40,7 @@ async def lifespan(app: FastAPI):
         settings.allow_live_fetch,
         settings.llm_enabled,
     )
+    threading.Thread(target=_warm_cache, daemon=True).start()
     yield
     log.info("Shutting down %s", settings.app_name)
 
