@@ -1,0 +1,20 @@
+# Core API
+fastapi>=0.115
+uvicorn>=0.34
+pydantic>=2.10
+pydantic-settings>=2.7
+
+# HTTP / resilience
+httpx>=0.28
+tenacity>=9.0
+
+# Data + ML  (HistGradientBoosting lives in scikit-learn -> no native LightGBM/SHAP wheel risk on Py3.14)
+numpy>=2.1
+pandas>=2.2
+scikit-learn>=1.6
+
+# Agents / LLM (optional at runtime; system has deterministic fallback if no key)
+anthropic>=0.40
+
+# Utils
+python-dotenv>=1.0

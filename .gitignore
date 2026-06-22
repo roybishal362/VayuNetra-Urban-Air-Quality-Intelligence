@@ -1,0 +1,35 @@
+# ---- Python ----
+backend/.venv/
+**/__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Secrets / env ----
+.env
+.env.local
+backend/.env
+frontend/.env.local
+*.key
+
+# ---- Node / Next.js ----
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ---- Data: keep curated snapshots, ignore bulky raw pulls + trained artifacts ----
+data/cache/raw/
+data/cache/tmp/
+*.joblib
+*.pkl
+
+# ---- Logs / OS / IDE ----
+*.log
+.DS_Store
+Thumbs.db
+.idea/
