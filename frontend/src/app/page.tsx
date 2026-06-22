@@ -6,11 +6,10 @@ import clsx from "clsx";
 import { api } from "@/lib/api";
 import type { City, CityIntelligence, GridResponse } from "@/lib/types";
 import Topbar from "@/components/Topbar";
-import KpiStrip from "@/components/KpiStrip";
-import OverviewPanel from "@/components/OverviewPanel";
 import Legend from "@/components/Legend";
 import TimeControl from "@/components/TimeControl";
 import type { TimeValue } from "@/components/TimeControl";
+import OverviewPanel from "@/components/OverviewPanel";
 import EnforcementPanel from "@/components/EnforcementPanel";
 import MetricsPanel from "@/components/MetricsPanel";
 import ZonePanel from "@/components/ZonePanel";
@@ -79,7 +78,7 @@ export default function Page() {
   if (!cities.length && error) {
     return (
       <main className="grid min-h-screen place-items-center p-6">
-        <div className="card max-w-md p-6 text-center">
+        <div className="glass max-w-md p-6 text-center">
           <h1 className="text-lg font-semibold text-rose-400">Cannot reach the API</h1>
           <p className="mt-2 text-sm text-slate-400">{error}</p>
           <p className="mt-3 text-xs text-slate-500">
@@ -95,7 +94,7 @@ export default function Page() {
     return (
       <main className="grid min-h-screen place-items-center">
         <div className="text-center text-slate-400">
-          <div className="text-2xl font-bold text-brand">VayuNetra</div>
+          <div className="font-display text-2xl font-bold text-brand">VayuNetra</div>
           <div className="mt-1 text-sm">Loading cities…</div>
         </div>
       </main>
@@ -103,87 +102,85 @@ export default function Page() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
-      <Topbar cities={cities} cityId={cityId} onCity={setCityId} intel={intel} />
-      {intel && <KpiStrip intel={intel} />}
-      <div className="flex min-h-0 flex-1">
-        <div className="relative flex-1">
-          <AirMap
-            city={city}
-            grid={grid}
-            attributions={intel?.attributions ?? []}
-            selectedZoneId={selectedZoneId}
-            onSelectZone={onSelectZone}
-            industrial={intel?.landuse?.industrial}
-            showIndustry={showIndustry}
-          />
-          <div className="absolute left-4 top-4 z-10">
-            <TimeControl value={time} onChange={setTime} />
-          </div>
-          <div className="absolute bottom-4 left-4 z-10">
-            <Legend />
-          </div>
-          <button
-            onClick={() => setShowIndustry((s) => !s)}
-            className={clsx(
-              "card absolute bottom-4 right-4 z-10 flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors",
-              showIndustry ? "text-amber-300" : "text-slate-300",
-            )}
-          >
-            <span className="h-2 w-2 rounded-full" style={{ background: "#E67E22" }} />
-            Industry {showIndustry ? "on" : "off"}
-          </button>
-          {time.layer === "forecast" && (
-            <div className="card absolute right-4 top-4 z-10 px-3 py-1.5 text-xs text-slate-200">
-              Predicted AQI · +{time.horizon}h
-            </div>
-          )}
-          {loading && (
-            <div className="absolute inset-0 z-20 grid place-items-center bg-ink-950/50 backdrop-blur-sm">
-              <div className="card px-4 py-3 text-sm text-slate-200">Building intelligence…</div>
-            </div>
-          )}
-        </div>
-
-        <aside className="flex w-[420px] flex-shrink-0 flex-col border-l border-ink-700 bg-ink-900/40">
-          <div className="flex flex-shrink-0 border-b border-ink-700">
-            {(["overview", "enforce", "zone", "metrics"] as Tab[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={clsx(
-                  "flex-1 py-2.5 text-sm font-medium capitalize transition-colors",
-                  tab === t ? "border-b-2 border-brand text-brand" : "text-slate-400 hover:text-slate-200",
-                )}
-              >
-                {t === "enforce" ? "Enforce" : t === "metrics" ? "Validation" : t}
-              </button>
-            ))}
-          </div>
-          <div key={tab} ref={sidebarRef} className="vn-fade min-h-0 flex-1 overflow-y-auto p-3">
-            {tab === "overview" &&
-              (intel ? (
-                <OverviewPanel intel={intel} onSelectZone={onSelectZone} onCity={setCityId} activeCityId={cityId} />
-              ) : (
-                <Placeholder text="Loading overview…" />
-              ))}
-            {tab === "enforce" &&
-              (intel ? (
-                <EnforcementPanel city={city} items={intel.enforcement} onSelectZone={onSelectZone} />
-              ) : (
-                <Placeholder text="Loading enforcement priorities…" />
-              ))}
-            {tab === "zone" &&
-              (selectedZoneId && intel ? (
-                <ZonePanel city={city} zoneId={selectedZoneId} attribution={attribution} advisory={advisory} />
-              ) : (
-                <Placeholder text="Select a station marker on the map to see its 72-hour forecast, source attribution and citizen advisory." />
-              ))}
-            {tab === "metrics" &&
-              (intel ? <MetricsPanel intel={intel} /> : <Placeholder text="Loading metrics…" />)}
-          </div>
-        </aside>
+    <div className="relative h-screen w-screen overflow-hidden">
+      <div className="absolute inset-0">
+        <AirMap
+          city={city}
+          grid={grid}
+          attributions={intel?.attributions ?? []}
+          selectedZoneId={selectedZoneId}
+          onSelectZone={onSelectZone}
+          industrial={intel?.landuse?.industrial}
+          showIndustry={showIndustry}
+        />
       </div>
+
+      <Topbar cities={cities} cityId={cityId} onCity={setCityId} intel={intel} />
+
+      <div className="absolute left-3 top-20 z-20 flex flex-col items-start gap-2">
+        <TimeControl value={time} onChange={setTime} />
+        {time.layer === "forecast" && (
+          <div className="glass px-3 py-1.5 text-xs text-slate-200">Predicted AQI · +{time.horizon}h</div>
+        )}
+      </div>
+
+      <div className="absolute bottom-3 left-3 z-20 flex items-end gap-2">
+        <Legend />
+        <button
+          onClick={() => setShowIndustry((s) => !s)}
+          className={clsx(
+            "glass flex items-center gap-1.5 px-3 py-2 text-xs transition-colors",
+            showIndustry ? "text-amber-300" : "text-slate-300",
+          )}
+        >
+          <span className="h-2 w-2 rounded-full" style={{ background: "#E67E22" }} />
+          Industry
+        </button>
+      </div>
+
+      <aside className="glass absolute bottom-3 right-3 top-20 z-20 flex w-[400px] flex-col overflow-hidden">
+        <div className="flex flex-shrink-0 border-b border-white/10">
+          {(["overview", "enforce", "zone", "metrics"] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={clsx(
+                "flex-1 py-2.5 text-sm font-medium capitalize transition-colors",
+                tab === t ? "border-b-2 border-brand text-brand" : "text-slate-400 hover:text-slate-200",
+              )}
+            >
+              {t === "enforce" ? "Enforce" : t === "metrics" ? "Validation" : t}
+            </button>
+          ))}
+        </div>
+        <div key={tab} ref={sidebarRef} className="vn-fade min-h-0 flex-1 overflow-y-auto p-3">
+          {tab === "overview" &&
+            (intel ? (
+              <OverviewPanel intel={intel} onSelectZone={onSelectZone} onCity={setCityId} activeCityId={cityId} />
+            ) : (
+              <Placeholder text="Loading overview…" />
+            ))}
+          {tab === "enforce" &&
+            (intel ? (
+              <EnforcementPanel city={city} items={intel.enforcement} onSelectZone={onSelectZone} />
+            ) : (
+              <Placeholder text="Loading enforcement priorities…" />
+            ))}
+          {tab === "zone" &&
+            (selectedZoneId && intel ? (
+              <ZonePanel city={city} zoneId={selectedZoneId} attribution={attribution} advisory={advisory} />
+            ) : (
+              <Placeholder text="Click a station on the map to see its 72-hour forecast, source attribution and citizen advisory." />
+            ))}
+          {tab === "metrics" && (intel ? <MetricsPanel intel={intel} /> : <Placeholder text="Loading metrics…" />)}
+        </div>
+      </aside>
+
+      {loading && (
+        <div className="absolute inset-0 z-40 grid place-items-center bg-ink-950/40 backdrop-blur-sm">
+          <div className="glass px-4 py-3 text-sm text-slate-200">Building intelligence…</div>
+        </div>
+      )}
     </div>
   );
 }
