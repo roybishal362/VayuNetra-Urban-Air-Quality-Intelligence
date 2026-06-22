@@ -9,7 +9,10 @@ from __future__ import annotations
 
 import math
 
+from app.domain.aqi import compute_aqi
+from app.schemas.air import Reading
 from app.schemas.city import City
+from app.schemas.forecast import ForecastPoint, ZoneForecast
 from app.schemas.geo import LatLon, haversine_km
 from app.schemas.observations import LandUse
 
@@ -64,3 +67,23 @@ def factors_for(city: City, landuse: LandUse | None, coords: list[tuple[float, f
     out = [factor_at(city, landuse, lat, lon, radius) for lat, lon in coords]
     _CACHE[city.id] = (len(coords), out)
     return out
+
+
+def scale_forecast(zf: ZoneForecast, factor: float) -> ZoneForecast:
+    """Apply a land-use multiplier to a forecast so a zone's chart matches its hyperlocal AQI."""
+    if abs(factor - 1.0) < 1e-6:
+        return zf
+    pts: list[ForecastPoint] = []
+    for p in zf.points:
+        pm = max(0.0, p.pm25 * factor)
+        lo = max(0.0, (p.pm25_low if p.pm25_low is not None else pm) * factor)
+        hi = max(0.0, (p.pm25_high if p.pm25_high is not None else pm) * factor)
+        res = compute_aqi(Reading(ts=p.ts, pm25=pm))
+        pts.append(ForecastPoint(
+            ts=p.ts, horizon_h=p.horizon_h, pm25=round(pm, 1),
+            pm25_low=round(lo, 1), pm25_high=round(hi, 1),
+            aqi=res.aqi if res else 0, category=res.category if res else "Unknown",
+            color=res.color if res else "#888888",
+        ))
+    return ZoneForecast(zone_id=zf.zone_id, issued_at=zf.issued_at, points=pts)
+

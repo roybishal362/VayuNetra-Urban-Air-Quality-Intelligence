@@ -42,6 +42,25 @@ class EnforcementItem(BaseModel):
     confidence: float
 
 
+class CityHealth(BaseModel):
+    total_population: int
+    exposed_population: int           # AQI > 200 (Poor or worse)
+    severe_population: int            # AQI > 400 (Severe)
+    vulnerable_sites_affected: int
+    avg_aqi: int
+    worst_category: str
+    note: str
+
+
+class Alert(BaseModel):
+    zone_id: str
+    zone_name: str
+    level: str                        # watch | warning | severe
+    aqi: int
+    horizon_h: int
+    message: str
+
+
 class CityIntelligence(BaseModel):
     city_id: str
     city_name: str
@@ -55,3 +74,5 @@ class CityIntelligence(BaseModel):
     advisories: list[AdvisoryItem]
     metrics: ForecastMetrics | None = None
     landuse: LandUse | None = None
+    health: CityHealth | None = None
+    alerts: list[Alert] = []

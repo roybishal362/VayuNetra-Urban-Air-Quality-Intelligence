@@ -17,6 +17,9 @@ from app.schemas.city import City
 from app.schemas.forecast import ForecastMetrics
 from app.schemas.intelligence import CityIntelligence
 from app.schemas.observations import CityObservations
+from app.services.alerts import compute_alerts
+from app.services.downscale import factor_at, scale_forecast
+from app.services.health import compute_health
 
 log = get_logger("vayunetra.intel")
 
@@ -69,10 +72,16 @@ def build_city_intelligence(city_id: str, mode: str = "snapshot") -> CityIntelli
     obs = get_city_observations(city_id, mode=mode)
     model = _model_for(city_id, obs, city)
 
-    forecasts = [model.predict_zone(obs, city, z.id, horizons=BUNDLE_HORIZONS) for z in city.zones]
+    forecasts = []
+    for z in city.zones:
+        raw = model.predict_zone(obs, city, z.id, horizons=BUNDLE_HORIZONS)
+        factor = factor_at(city, obs.landuse, z.center.lat, z.center.lon)
+        forecasts.append(scale_forecast(raw, factor))
     fmap = {f.zone_id: f for f in forecasts}
     attributions = attribute_city(obs, city)
     enforcement = build_enforcement(city, attributions, fmap)
+    health = compute_health(city, attributions)
+    alerts = compute_alerts(city, attributions, forecasts)
 
     amap = {a.zone_id: a for a in attributions}
     zmap = {z.id: z for z in city.zones}
@@ -88,7 +97,7 @@ def build_city_intelligence(city_id: str, mode: str = "snapshot") -> CityIntelli
         summary=_summary(city, attributions, enforcement, model.metrics),
         forecasts=forecasts, attributions=attributions,
         enforcement=enforcement, advisories=advisories, metrics=model.metrics,
-        landuse=obs.landuse,
+        landuse=obs.landuse, health=health, alerts=alerts,
     )
     log.info("[%s] intelligence built (%d zones, src=%s)", city_id, len(attributions), obs.source)
     return intel
