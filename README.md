@@ -30,9 +30,9 @@ offline snapshots so the demo **never depends on a live network**.
 ### Option A — GitHub Codespaces (recommended on a restricted laptop)
 Nothing installs on your machine; the whole stack runs in GitHub's cloud, forwarded to your browser.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/REPLACE-OWNER/vayunetra?quickstart=1)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/roybishal362/VayuNetra-Urban-Air-Quality-Intelligence?quickstart=1)
 
-1. Push this repo to GitHub (see below), then click the badge **(replace `REPLACE-OWNER`)**.
+1. Click the badge above (or on the repo: **Code ▾ → Codespaces → Create codespace on main**).
 2. Wait for the container to build (deps install automatically).
 3. In the Codespace terminal, start the two services:
    ```bash
