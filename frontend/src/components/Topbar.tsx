@@ -33,7 +33,7 @@ export default function Topbar({
   const severe = intel?.alerts?.filter((a) => a.level === "severe").length ?? 0;
 
   return (
-    <header className="glass absolute inset-x-3 top-3 z-30 flex h-14 items-center gap-3 px-4">
+    <header className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-ink-700 bg-ink-900/70 px-4 backdrop-blur">
       <div className="flex items-center gap-2.5">
         <div className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-ink-850/70">
           <Logo size={22} />

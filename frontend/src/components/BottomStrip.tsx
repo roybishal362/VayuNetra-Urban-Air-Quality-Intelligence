@@ -47,7 +47,7 @@ export default function BottomStrip({
   const worst = [...intel.attributions].sort((a, b) => b.aqi - a.aqi).slice(0, 3);
 
   return (
-    <div className="glass absolute bottom-3 left-3 right-[416px] z-20 flex h-[92px] items-center gap-6 overflow-x-auto px-4">
+    <div className="flex h-[88px] flex-shrink-0 items-center gap-6 overflow-x-auto border-t border-ink-700 bg-ink-900/60 px-4 backdrop-blur">
       <Seg title="AQI scale">
         <div className="flex overflow-hidden rounded">
           {AQI_BANDS.map((b) => <span key={b.label} className="h-2.5 w-7" style={{ background: b.color }} title={b.label} />)}

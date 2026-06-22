@@ -78,7 +78,7 @@ export default function Page() {
   if (!cities.length && error) {
     return (
       <main className="grid min-h-screen place-items-center p-6">
-        <div className="glass max-w-md p-6 text-center">
+        <div className="card max-w-md p-6 text-center">
           <h1 className="text-lg font-semibold text-rose-400">Cannot reach the API</h1>
           <p className="mt-2 text-sm text-slate-400">{error}</p>
           <p className="mt-3 text-xs text-slate-500">
@@ -102,79 +102,82 @@ export default function Page() {
   }
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden">
-      <div className="absolute inset-0">
-        <AirMap
-          city={city}
-          grid={grid}
-          attributions={intel?.attributions ?? []}
-          selectedZoneId={selectedZoneId}
-          onSelectZone={onSelectZone}
-          industrial={intel?.landuse?.industrial}
-          showIndustry={showIndustry}
-        />
-      </div>
-
+    <div className="flex h-screen flex-col">
       <Topbar cities={cities} cityId={cityId} onCity={setCityId} intel={intel} />
 
-      <div className="absolute left-3 top-20 z-20 flex flex-col items-start gap-2">
-        <TimeControl value={time} onChange={setTime} />
-        {time.layer === "forecast" && (
-          <div className="glass px-3 py-1.5 text-xs text-slate-200">Predicted AQI · +{time.horizon}h</div>
-        )}
-      </div>
-
-      {intel && (
-        <BottomStrip
-          intel={intel}
-          showIndustry={showIndustry}
-          onToggleIndustry={() => setShowIndustry((s) => !s)}
-        />
-      )}
-
-      <aside className="glass absolute bottom-3 right-3 top-20 z-20 flex w-[400px] flex-col overflow-hidden">
-        <div className="flex flex-shrink-0 border-b border-white/10">
-          {(["overview", "enforce", "zone", "metrics"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={clsx(
-                "flex-1 py-2.5 text-sm font-medium capitalize transition-colors",
-                tab === t ? "border-b-2 border-brand text-brand" : "text-slate-400 hover:text-slate-200",
+      <div className="flex min-h-0 flex-1">
+        {/* map column: map + telemetry strip (nothing floats over the map except controls) */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="relative min-h-0 flex-1">
+            <AirMap
+              city={city}
+              grid={grid}
+              attributions={intel?.attributions ?? []}
+              selectedZoneId={selectedZoneId}
+              onSelectZone={onSelectZone}
+              industrial={intel?.landuse?.industrial}
+              showIndustry={showIndustry}
+            />
+            <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-2">
+              <TimeControl value={time} onChange={setTime} />
+              {time.layer === "forecast" && (
+                <div className="card px-3 py-1.5 text-xs text-slate-200">Predicted AQI · +{time.horizon}h</div>
               )}
-            >
-              {t === "enforce" ? "Enforce" : t === "metrics" ? "Validation" : t}
-            </button>
-          ))}
+            </div>
+            {loading && (
+              <div className="absolute inset-0 z-20 grid place-items-center bg-ink-950/40 backdrop-blur-sm">
+                <div className="card px-4 py-3 text-sm text-slate-200">Building intelligence…</div>
+              </div>
+            )}
+          </div>
+          {intel && (
+            <BottomStrip
+              intel={intel}
+              showIndustry={showIndustry}
+              onToggleIndustry={() => setShowIndustry((s) => !s)}
+            />
+          )}
         </div>
-        <div key={tab} ref={sidebarRef} className="vn-fade min-h-0 flex-1 overflow-y-auto p-3">
-          {tab === "overview" &&
-            (intel ? (
-              <OverviewPanel intel={intel} onSelectZone={onSelectZone} onCity={setCityId} activeCityId={cityId} />
-            ) : (
-              <Placeholder text="Loading overview…" />
-            ))}
-          {tab === "enforce" &&
-            (intel ? (
-              <EnforcementPanel city={city} items={intel.enforcement} onSelectZone={onSelectZone} />
-            ) : (
-              <Placeholder text="Loading enforcement priorities…" />
-            ))}
-          {tab === "zone" &&
-            (selectedZoneId && intel ? (
-              <ZonePanel city={city} zoneId={selectedZoneId} attribution={attribution} advisory={advisory} />
-            ) : (
-              <Placeholder text="Click a station on the map to see its 72-hour forecast, source attribution and citizen advisory." />
-            ))}
-          {tab === "metrics" && (intel ? <MetricsPanel intel={intel} /> : <Placeholder text="Loading metrics…" />)}
-        </div>
-      </aside>
 
-      {loading && (
-        <div className="absolute inset-0 z-40 grid place-items-center bg-ink-950/40 backdrop-blur-sm">
-          <div className="glass px-4 py-3 text-sm text-slate-200">Building intelligence…</div>
-        </div>
-      )}
+        {/* detail rail — beside the map, so it can never hide what you clicked */}
+        <aside className="flex w-[420px] flex-shrink-0 flex-col border-l border-ink-700 bg-ink-900/60 backdrop-blur">
+          <div className="flex flex-shrink-0 border-b border-ink-700">
+            {(["overview", "enforce", "zone", "metrics"] as Tab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={clsx(
+                  "flex-1 py-2.5 text-sm font-medium capitalize transition-colors",
+                  tab === t ? "border-b-2 border-brand text-brand" : "text-slate-400 hover:text-slate-200",
+                )}
+              >
+                {t === "enforce" ? "Enforce" : t === "metrics" ? "Validation" : t}
+              </button>
+            ))}
+          </div>
+          <div key={tab} ref={sidebarRef} className="vn-fade min-h-0 flex-1 overflow-y-auto p-3">
+            {tab === "overview" &&
+              (intel ? (
+                <OverviewPanel intel={intel} onSelectZone={onSelectZone} onCity={setCityId} activeCityId={cityId} />
+              ) : (
+                <Placeholder text="Loading overview…" />
+              ))}
+            {tab === "enforce" &&
+              (intel ? (
+                <EnforcementPanel city={city} items={intel.enforcement} onSelectZone={onSelectZone} />
+              ) : (
+                <Placeholder text="Loading enforcement priorities…" />
+              ))}
+            {tab === "zone" &&
+              (selectedZoneId && intel ? (
+                <ZonePanel city={city} zoneId={selectedZoneId} attribution={attribution} advisory={advisory} />
+              ) : (
+                <Placeholder text="Click a station on the map to see its 72-hour forecast, source attribution and citizen advisory." />
+              ))}
+            {tab === "metrics" && (intel ? <MetricsPanel intel={intel} /> : <Placeholder text="Loading metrics…" />)}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

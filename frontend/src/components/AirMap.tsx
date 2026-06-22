@@ -174,8 +174,7 @@ export default function AirMap({
       .setLngLat([z.center.lon, z.center.lat])
       .setHTML(html)
       .addTo(map);
-    map.easeTo({ center: [z.center.lon, z.center.lat], duration: 500,
-                 padding: { top: 80, right: 430, bottom: 90, left: 0 } });
+    // intentionally do NOT pan the map on selection — moving the map hides what was clicked.
   }, [ready, selectedZoneId, attributions, city]);
 
   // zone HTML markers (no glyph dependency, full styling control)
@@ -215,7 +214,7 @@ export default function AirMap({
     if (!ready || !map) return;
     const b = city.bbox;
     map.fitBounds([[b.min_lon, b.min_lat], [b.max_lon, b.max_lat]],
-      { padding: { top: 90, right: 430, bottom: 120, left: 40 }, duration: 700 });
+      { padding: { top: 48, right: 48, bottom: 48, left: 48 }, duration: 700 });
   }, [ready, city]);
 
   // NOTE: maplibre-gl.css forces `.maplibregl-map { position: relative }`, which overrides a
