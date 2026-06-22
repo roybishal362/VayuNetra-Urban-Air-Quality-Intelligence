@@ -72,6 +72,23 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     )
 
 
+@app.get("/", include_in_schema=False)
+def root():
+    return {
+        "app": settings.app_name,
+        "status": "ok",
+        "note": "This is the VayuNetra API. The dashboard UI runs separately on port 3000.",
+        "interactive_docs": "/docs",
+        "endpoints": [
+            "/health",
+            "/api/cities",
+            "/api/cities/{city}/intelligence",
+            "/api/cities/{city}/grid?layer=current|forecast&horizon=24",
+            "/api/cities/{city}/zones/{zone}/forecast",
+        ],
+    }
+
+
 @app.get("/health", tags=["system"])
 def health():
     return {
