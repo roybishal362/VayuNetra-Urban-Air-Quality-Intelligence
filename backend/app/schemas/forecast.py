@@ -34,6 +34,19 @@ class HorizonMetric(BaseModel):
     persistence_rmse: float
     persistence_mae: float
     improvement_pct: float          # RMSE improvement of model over persistence baseline
+    r2: float = 0.0
+    bias: float = 0.0               # mean(pred - actual)
+
+
+class BacktestPoint(BaseModel):
+    ts: datetime
+    actual: float
+    predicted: float
+
+
+class ScatterPoint(BaseModel):
+    actual: float
+    predicted: float
 
 
 class ForecastMetrics(BaseModel):
@@ -42,5 +55,9 @@ class ForecastMetrics(BaseModel):
     trained_at: datetime
     n_train: int
     n_test: int
+    blend_weight: float = 1.0       # model weight in model⊕persistence blend (1=pure model)
+    coverage: float = 0.0           # fraction of actuals inside the p10–p90 band
     horizons: list[HorizonMetric]
     feature_importance: dict[str, float] = {}
+    backtest: list[BacktestPoint] = []     # representative zone @ +24h: actual vs predicted
+    scatter: list[ScatterPoint] = []       # held-out actual vs predicted sample

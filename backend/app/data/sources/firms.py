@@ -25,8 +25,13 @@ _FIRMS_CSV = "https://firms.modaps.eosdis.nasa.gov/api/area/csv"
 _FIRE_REGIONS: dict[str, BBox] = {
     "delhi": BBox(min_lat=29.2, min_lon=74.4, max_lat=31.3, max_lon=77.2),      # Punjab/Haryana belt
     "bengaluru": BBox(min_lat=12.4, min_lon=76.9, max_lat=13.6, max_lon=78.2),  # surrounding rural
+    "mumbai": BBox(min_lat=18.6, min_lon=72.5, max_lat=19.7, max_lon=73.5),
+    "kolkata": BBox(min_lat=22.0, min_lon=87.9, max_lat=23.3, max_lon=88.9),
+    "chennai": BBox(min_lat=12.5, min_lon=79.8, max_lat=13.7, max_lon=80.5),
+    "hyderabad": BBox(min_lat=16.9, min_lon=78.0, max_lat=17.9, max_lon=78.9),
 }
-_DEFAULT_COUNT = {"delhi": 30, "bengaluru": 8}
+_DEFAULT_COUNT = {"delhi": 30, "bengaluru": 8, "mumbai": 12, "kolkata": 14,
+                  "chennai": 12, "hyderabad": 12}
 
 
 def fire_region(city_id: str, fallback: BBox) -> BBox:

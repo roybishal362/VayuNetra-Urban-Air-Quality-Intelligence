@@ -138,5 +138,8 @@ def build_inference_rows(obs: CityObservations, city: City, zone_id: str,
         row["tgt_month"] = float(tts.month)
         row["lat"], row["lon"], row["horizon_h"] = z.center.lat, z.center.lon, float(h)
         row["target_ts"] = tts
+        ptts = tts - pd.Timedelta(hours=24)
+        prow = dfl.loc[ptts] if ptts in dfl.index else None
+        row["persist"] = float(prow["pm25"]) if (prow is not None and pd.notna(prow["pm25"])) else float(cur.get("pm25") or 0.0)
         rows.append(row)
     return pd.DataFrame(rows)
