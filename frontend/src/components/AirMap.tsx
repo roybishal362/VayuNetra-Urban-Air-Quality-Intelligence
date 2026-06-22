@@ -165,6 +165,7 @@ export default function AirMap({
         `border:2px solid ${selected ? "#38bdf8" : "rgba(11,17,32,.85)"};` +
         `box-shadow:0 0 0 1px rgba(0,0,0,.35)${selected ? ",0 0 0 4px rgba(56,189,248,.35)" : ""};` +
         `cursor:pointer;transition:transform .1s;`;
+      if (aqi >= 401) el.classList.add("vn-pulse");
       el.onmouseenter = () => (el.style.transform = "scale(1.15)");
       el.onmouseleave = () => (el.style.transform = "scale(1)");
       el.onclick = (e) => { e.stopPropagation(); selectRef.current(z.id); };
