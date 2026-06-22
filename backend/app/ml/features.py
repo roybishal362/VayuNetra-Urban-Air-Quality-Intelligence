@@ -106,14 +106,37 @@ def build_training_table(obs: CityObservations, city: City, horizons=HORIZONS) -
 
 def build_inference_rows(obs: CityObservations, city: City, zone_id: str,
                          issue_ts, horizons) -> pd.DataFrame:
-    """Feature rows for a single issue time across horizons (targets may be in the forecast region)."""
-    z = {zz.id: zz for zz in city.zones}[zone_id]
+    """Feature rows for one issue time across horizons. Computes only the issue row (fast),
+    while exactly mirroring the columns produced by `_supervised` to avoid train/serve skew."""
+    z = {zz.id: zz for zz in city.zones}.get(zone_id)
     zs = obs.zone(zone_id)
-    if zs is None:
+    if z is None or zs is None:
         return pd.DataFrame()
     dfl = _add_lags(build_zone_frame(zs))
     issue = pd.to_datetime(issue_ts)
-    parts = [_supervised(dfl, z.center.lat, z.center.lon, zone_id, h) for h in horizons]
-    big = pd.concat(parts, axis=0)
-    sel = big[pd.to_datetime(big["issue_ts"]) == issue].sort_values("horizon_h")
-    return sel
+    if issue not in dfl.index:
+        return pd.DataFrame()
+    cur = dfl.loc[issue]
+
+    rows = []
+    for h in horizons:
+        tts = issue + pd.Timedelta(hours=int(h))
+        tw = dfl.loc[tts] if tts in dfl.index else None
+        row = {f"cur_{c}": cur.get(c) for c in _CUR_COLS}
+        wd = row.pop("cur_wind_dir", np.nan)
+        row["cur_wind_sin"] = float(np.sin(np.radians(wd))) if pd.notna(wd) else np.nan
+        row["cur_wind_cos"] = float(np.cos(np.radians(wd))) if pd.notna(wd) else np.nan
+        for c in WEATHER:
+            row[f"tgt_{c}"] = float(tw[c]) if (tw is not None and pd.notna(tw[c])) else np.nan
+        twd = row.pop("tgt_wind_dir", np.nan)
+        row["tgt_wind_sin"] = float(np.sin(np.radians(twd))) if pd.notna(twd) else np.nan
+        row["tgt_wind_cos"] = float(np.cos(np.radians(twd))) if pd.notna(twd) else np.nan
+        row["tgt_hour_sin"] = float(np.sin(2 * np.pi * tts.hour / 24))
+        row["tgt_hour_cos"] = float(np.cos(2 * np.pi * tts.hour / 24))
+        row["tgt_dow"] = float(tts.dayofweek)
+        row["tgt_is_weekend"] = float(tts.dayofweek >= 5)
+        row["tgt_month"] = float(tts.month)
+        row["lat"], row["lon"], row["horizon_h"] = z.center.lat, z.center.lon, float(h)
+        row["target_ts"] = tts
+        rows.append(row)
+    return pd.DataFrame(rows)

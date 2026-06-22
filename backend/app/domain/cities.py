@@ -20,6 +20,7 @@ DELHI = City(
     center=LatLon(lat=28.6139, lon=77.2090),
     bbox=BBox(min_lat=28.40, min_lon=76.84, max_lat=28.88, max_lon=77.40),
     grid_step_km=2.0,
+    languages=["en", "hi", "pa", "ur"],
     zones=[
         _z("anand_vihar", "Anand Vihar", 28.6469, 77.3154, 310000, 41),
         _z("ito", "ITO", 28.6286, 77.2410, 180000, 33),
@@ -44,6 +45,7 @@ BENGALURU = City(
     center=LatLon(lat=12.9716, lon=77.5946),
     bbox=BBox(min_lat=12.83, min_lon=77.45, max_lat=13.14, max_lon=77.78),
     grid_step_km=2.0,
+    languages=["en", "kn", "ta", "hi"],
     zones=[
         _z("silk_board", "Silk Board", 12.9177, 77.6233, 260000, 34),
         _z("btm", "BTM Layout", 12.9135, 77.6101, 240000, 38),

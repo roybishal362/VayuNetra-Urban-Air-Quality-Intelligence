@@ -23,4 +23,5 @@ class City(BaseModel):
     center: LatLon
     bbox: BBox
     grid_step_km: float = 2.0              # heatmap resolution
+    languages: list[str] = ["en", "hi"]    # citizen-advisory languages
     zones: list[Zone] = []

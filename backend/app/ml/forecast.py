@@ -105,10 +105,10 @@ class ForecastModel:
 
     # ---- inference ------------------------------------------------------
     def predict_zone(self, obs: CityObservations, city: City, zone_id: str,
-                     future_hours: int = 72) -> ZoneForecast:
+                     future_hours: int = 72, horizons: list[int] | None = None) -> ZoneForecast:
         issue = obs.now_ts
-        horizons = list(range(1, future_hours + 1))
-        rows = build_inference_rows(obs, city, zone_id, issue, horizons)
+        hs = horizons if horizons is not None else list(range(1, future_hours + 1))
+        rows = build_inference_rows(obs, city, zone_id, issue, hs)
         if rows.empty:
             return ZoneForecast(zone_id=zone_id, issued_at=issue, points=[])
 
