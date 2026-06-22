@@ -76,3 +76,15 @@ class CityIntelligence(BaseModel):
     landuse: LandUse | None = None
     health: CityHealth | None = None
     alerts: list[Alert] = []
+
+
+class CityComparison(BaseModel):
+    city_id: str
+    city_name: str
+    avg_aqi: int
+    worst_zone: str
+    worst_aqi: int
+    exposed: int
+    alerts: int
+    improvement_pct: float
+    category: str

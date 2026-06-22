@@ -10,12 +10,12 @@ from app.agents.advisory import build_advisory
 from app.agents.enforcement import build_enforcement
 from app.core.logging import get_logger
 from app.data.repository import get_city_observations
-from app.domain.cities import get_city
+from app.domain.cities import get_city, list_cities
 from app.ml.attribution import attribute_city
 from app.ml.forecast import ForecastModel
 from app.schemas.city import City
 from app.schemas.forecast import ForecastMetrics
-from app.schemas.intelligence import CityIntelligence
+from app.schemas.intelligence import CityComparison, CityIntelligence
 from app.schemas.observations import CityObservations
 from app.services.alerts import compute_alerts
 from app.services.downscale import factor_at, scale_forecast
@@ -114,9 +114,30 @@ def get_city_intelligence(city_id: str, mode: str = "snapshot", refresh: bool = 
 
 
 def warm_cache(mode: str = "snapshot") -> None:
-    from app.domain.cities import list_cities
     for c in list_cities():
         try:
             get_city_intelligence(c.id, mode=mode)
         except Exception as exc:
             log.warning("warm_cache failed for %s: %s", c.id, exc)
+
+
+def compare_cities() -> list[CityComparison]:
+    """Compact per-city KPIs for the national comparison view (uses cached intelligence)."""
+    out: list[CityComparison] = []
+    for c in list_cities():
+        try:
+            intel = get_city_intelligence(c.id)
+            h = intel.health
+            worst = max(intel.attributions, key=lambda a: a.aqi) if intel.attributions else None
+            skill = intel.metrics.horizons[0].improvement_pct if (intel.metrics and intel.metrics.horizons) else 0.0
+            out.append(CityComparison(
+                city_id=c.id, city_name=c.name,
+                avg_aqi=h.avg_aqi if h else 0, worst_zone=worst.zone_name if worst else "-",
+                worst_aqi=worst.aqi if worst else 0, exposed=h.exposed_population if h else 0,
+                alerts=len(intel.alerts), improvement_pct=skill,
+                category=h.worst_category if h else "-",
+            ))
+        except Exception as exc:
+            log.warning("compare failed for %s: %s", c.id, exc)
+    out.sort(key=lambda x: x.avg_aqi, reverse=True)
+    return out

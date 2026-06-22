@@ -151,14 +151,14 @@ export default function Page() {
                   tab === t ? "border-b-2 border-brand text-brand" : "text-slate-400 hover:text-slate-200",
                 )}
               >
-                {t === "enforce" ? "Enforce" : t}
+                {t === "enforce" ? "Enforce" : t === "metrics" ? "Validation" : t}
               </button>
             ))}
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {tab === "overview" &&
               (intel ? (
-                <OverviewPanel intel={intel} onSelectZone={onSelectZone} />
+                <OverviewPanel intel={intel} onSelectZone={onSelectZone} onCity={setCityId} activeCityId={cityId} />
               ) : (
                 <Placeholder text="Loading overview…" />
               ))}

@@ -12,11 +12,11 @@ from app.domain.cities import get_city, list_cities
 from app.schemas.city import City
 from app.schemas.forecast import ZoneForecast
 from app.schemas.grid import GridResponse
-from app.schemas.intelligence import CityIntelligence
+from app.schemas.intelligence import CityComparison, CityIntelligence
 from app.schemas.scenario import SimulationResult, ZoneHistory
 from app.services import grid as grid_service
 from app.services.downscale import factor_at, scale_forecast
-from app.services.intelligence_service import get_city_intelligence, get_model
+from app.services.intelligence_service import compare_cities, get_city_intelligence, get_model
 from app.services.scenario import build_history, simulate_reduction
 
 log = get_logger("vayunetra.api.routes")
@@ -33,6 +33,11 @@ def _require_city(cid: str) -> City:
 @router.get("/cities", response_model=list[City], tags=["cities"])
 def cities():
     return list_cities()
+
+
+@router.get("/compare", response_model=list[CityComparison], tags=["cities"])
+def compare():
+    return compare_cities()
 
 
 @router.get("/cities/{cid}", response_model=City, tags=["cities"])

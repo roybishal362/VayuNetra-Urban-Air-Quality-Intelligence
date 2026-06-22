@@ -45,10 +45,20 @@ export interface EnforcementItem {
 export interface HorizonMetric {
   horizon_h: number; rmse: number; mae: number;
   persistence_rmse: number; persistence_mae: number; improvement_pct: number;
+  r2: number; bias: number;
 }
+export interface BacktestPoint { ts: string; actual: number; predicted: number }
+export interface ScatterPoint { actual: number; predicted: number }
 export interface ForecastMetrics {
   city_id: string; target: string; trained_at: string; n_train: number; n_test: number;
+  blend_weight: number; coverage: number;
   horizons: HorizonMetric[]; feature_importance: Record<string, number>;
+  backtest: BacktestPoint[]; scatter: ScatterPoint[];
+}
+
+export interface CityComparison {
+  city_id: string; city_name: string; avg_aqi: number; worst_zone: string; worst_aqi: number;
+  exposed: number; alerts: number; improvement_pct: number; category: string;
 }
 
 export interface CityHealth {
