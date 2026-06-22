@@ -22,6 +22,10 @@ dist/
 *.tsbuildinfo
 next-env.d.ts
 
+# ---- Dev-only Playwright screenshot tooling ----
+frontend/screenshot.mjs
+frontend/shot-*.png
+
 # ---- Data: keep curated snapshots (committed); ignore live cache + model binaries ----
 data/cache/
 *.joblib

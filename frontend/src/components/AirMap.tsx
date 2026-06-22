@@ -1,12 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import maplibregl from "maplibre-gl";
+import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { City, GridResponse, ZoneAttribution } from "@/lib/types";
-import { textOn } from "@/lib/aqi";
+import { aqiColor, textOn } from "@/lib/aqi";
 
-const STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
+// Inline style: parses instantly (so our data layers always load, even if the raster
+// basemap is blocked by a corporate network). Raster tiles degrade to the dark background.
+const STYLE: StyleSpecification = {
+  version: 8,
+  sources: {
+    carto: {
+      type: "raster",
+      tiles: [
+        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+      ],
+      tileSize: 256,
+      attribution: "© OpenStreetMap, © CARTO",
+    },
+  },
+  layers: [
+    { id: "bg", type: "background", paint: { "background-color": "#0b1120" } },
+    { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 0.85 } },
+  ],
+};
 
 interface Props {
   city: City;
@@ -37,36 +57,14 @@ function gridFC(grid: GridResponse | null): GeoJSON.FeatureCollection {
   };
 }
 
-function zonesFC(city: City, attrs: ZoneAttribution[]): GeoJSON.FeatureCollection {
-  const byId = new Map(attrs.map((a) => [a.zone_id, a]));
-  return {
-    type: "FeatureCollection",
-    features: city.zones.map((z) => {
-      const a = byId.get(z.id);
-      const color = a ? a.contributions[0]?.color ?? "#94a3b8" : "#94a3b8";
-      const aqiSwatch = a?.category === "Severe" ? "#AF2D24" : a ? "#0f172a" : "#334155";
-      return {
-        type: "Feature",
-        properties: {
-          id: z.id, name: z.name,
-          aqi: a?.aqi ?? 0, label: a ? String(a.aqi) : "—",
-          ring: a?.contributions[0]?.color ?? "#64748b",
-          textColor: textOn(aqiSwatch),
-          fill: aqiSwatch,
-        },
-        geometry: { type: "Point", coordinates: [z.center.lon, z.center.lat] },
-      };
-    }),
-  };
-}
-
 export default function AirMap({ city, grid, attributions, selectedZoneId, onSelectZone }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const popupRef = useRef<maplibregl.Popup | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
+  const selectRef = useRef(onSelectZone);
+  selectRef.current = onSelectZone;
   const [ready, setReady] = useState(false);
 
-  // init once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const map = new maplibregl.Map({
@@ -79,57 +77,25 @@ export default function AirMap({ city, grid, attributions, selectedZoneId, onSel
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.addControl(new maplibregl.AttributionControl({ compact: true }));
-    popupRef.current = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 14 });
 
     map.on("load", () => {
       map.addSource("grid", { type: "geojson", data: gridFC(null) });
       map.addLayer({
         id: "grid-fill", type: "fill", source: "grid",
-        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.42 },
+        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.45 },
       });
-      map.addSource("zones", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-      map.addLayer({
-        id: "zone-ring", type: "circle", source: "zones",
-        paint: {
-          "circle-radius": 17, "circle-color": "#0b1120", "circle-opacity": 0.9,
-          "circle-stroke-width": 2.5, "circle-stroke-color": ["get", "ring"],
-        },
-      });
-      map.addLayer({
-        id: "zone-label", type: "symbol", source: "zones",
-        layout: { "text-field": ["get", "label"], "text-size": 12, "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"], "text-allow-overlap": true },
-        paint: { "text-color": ["get", "textColor"] },
-      });
-      map.addLayer({
-        id: "zone-selected", type: "circle", source: "zones",
-        filter: ["==", ["get", "id"], ""],
-        paint: { "circle-radius": 24, "circle-color": "transparent", "circle-stroke-width": 3, "circle-stroke-color": "#38bdf8" },
-      });
-
-      map.on("mouseenter", "zone-ring", (e) => {
-        map.getCanvas().style.cursor = "pointer";
-        const f = e.features?.[0];
-        if (f && popupRef.current) {
-          const p = f.properties as Record<string, string>;
-          popupRef.current
-            .setLngLat((f.geometry as GeoJSON.Point).coordinates as [number, number])
-            .setHTML(`<div class="text-xs"><div class="font-semibold">${p.name}</div><div class="text-slate-300">AQI ${p.aqi}</div></div>`)
-            .addTo(map);
-        }
-      });
-      map.on("mouseleave", "zone-ring", () => {
-        map.getCanvas().style.cursor = "";
-        popupRef.current?.remove();
-      });
-      map.on("click", "zone-ring", (e) => {
-        const id = e.features?.[0]?.properties?.id as string | undefined;
-        if (id) onSelectZone(id);
-      });
-
+      map.resize();
       setReady(true);
     });
 
+    // Fix the classic flexbox sizing race: resize whenever the container changes size.
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(containerRef.current);
+
     return () => {
+      ro.disconnect();
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
       map.remove();
       mapRef.current = null;
       setReady(false);
@@ -137,20 +103,40 @@ export default function AirMap({ city, grid, attributions, selectedZoneId, onSel
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // grid updates
+  // grid layer updates
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
     (map.getSource("grid") as maplibregl.GeoJSONSource | undefined)?.setData(gridFC(grid));
   }, [ready, grid]);
 
-  // zones + selection updates
+  // zone HTML markers (no glyph dependency, full styling control)
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
-    (map.getSource("zones") as maplibregl.GeoJSONSource | undefined)?.setData(zonesFC(city, attributions));
-    if (map.getLayer("zone-selected")) {
-      map.setFilter("zone-selected", ["==", ["get", "id"], selectedZoneId ?? ""]);
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
+    const byId = new Map(attributions.map((a) => [a.zone_id, a]));
+
+    for (const z of city.zones) {
+      const a = byId.get(z.id);
+      const aqi = a?.aqi ?? 0;
+      const color = aqi ? aqiColor(aqi) : "#475569";
+      const selected = z.id === selectedZoneId;
+      const el = document.createElement("div");
+      el.textContent = aqi ? String(aqi) : "–";
+      el.title = `${z.name} · AQI ${aqi || "n/a"}`;
+      el.style.cssText =
+        `display:grid;place-items:center;width:32px;height:32px;border-radius:9999px;` +
+        `background:${color};color:${textOn(color)};font:600 12px ui-sans-serif,system-ui;` +
+        `border:2px solid ${selected ? "#38bdf8" : "rgba(11,17,32,.85)"};` +
+        `box-shadow:0 0 0 1px rgba(0,0,0,.35)${selected ? ",0 0 0 4px rgba(56,189,248,.35)" : ""};` +
+        `cursor:pointer;transition:transform .1s;`;
+      el.onmouseenter = () => (el.style.transform = "scale(1.15)");
+      el.onmouseleave = () => (el.style.transform = "scale(1)");
+      el.onclick = (e) => { e.stopPropagation(); selectRef.current(z.id); };
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([z.center.lon, z.center.lat]).addTo(map);
+      markersRef.current.push(marker);
     }
   }, [ready, city, attributions, selectedZoneId]);
 
@@ -159,8 +145,11 @@ export default function AirMap({ city, grid, attributions, selectedZoneId, onSel
     const map = mapRef.current;
     if (!ready || !map) return;
     const b = city.bbox;
-    map.fitBounds([[b.min_lon, b.min_lat], [b.max_lon, b.max_lat]], { padding: 70, duration: 700 });
+    map.fitBounds([[b.min_lon, b.min_lat], [b.max_lon, b.max_lat]], { padding: 60, duration: 700 });
   }, [ready, city]);
 
-  return <div ref={containerRef} className="absolute inset-0" />;
+  // NOTE: maplibre-gl.css forces `.maplibregl-map { position: relative }`, which overrides a
+  // Tailwind `absolute` (equal specificity, later in bundle) and collapses height. Size via
+  // h-full/w-full against the definite-height parent instead.
+  return <div ref={containerRef} className="h-full w-full" />;
 }

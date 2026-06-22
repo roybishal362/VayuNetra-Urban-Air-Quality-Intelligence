@@ -7,6 +7,8 @@
 
 **ET AI Hackathon 2.0 — Problem Statement #5** · Smart Cities / Environmental Intelligence / Geospatial Analytics / Public Health
 
+![VayuNetra dashboard — Delhi AQI heatmap, station markers and enforcement queue](docs/screenshots/dashboard.png)
+
 ---
 
 ## What it does — *Monitor → Predict → Attribute → Act*
