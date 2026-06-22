@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     environment: str = "dev"
 
     # --- optional integrations (all degrade gracefully) ---
+    # Primary LLM: Groq (OpenAI-compatible, fast + low-cost).
+    groq_api_key: str | None = None
+    groq_model: str = "llama-3.3-70b-versatile"
+    # Optional Anthropic fallback (used only if no Groq key).
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-sonnet-4-6"
     openaq_api_key: str | None = None
@@ -42,7 +46,7 @@ class Settings(BaseSettings):
 
     @property
     def llm_enabled(self) -> bool:
-        return bool(self.anthropic_api_key)
+        return bool(self.groq_api_key or self.anthropic_api_key)
 
 
 settings = Settings()
