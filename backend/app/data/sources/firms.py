@@ -30,16 +30,19 @@ _FIRE_REGIONS: dict[str, BBox] = {
     "chennai": BBox(min_lat=12.5, min_lon=79.8, max_lat=13.7, max_lon=80.5),
     "hyderabad": BBox(min_lat=16.9, min_lon=78.0, max_lat=17.9, max_lon=78.9),
 }
-_DEFAULT_COUNT = {"delhi": 30, "bengaluru": 8, "mumbai": 12, "kolkata": 14,
-                  "chennai": 12, "hyderabad": 12}
+# Regional crop/biomass-burning propensity: Indo-Gangetic plain high, coastal metros ~none.
+# Scaled by month — India's burning peaks Oct–Nov (paddy) + Apr–May (wheat); minimal in monsoon/summer.
+_FIRE_BASE = {"delhi": 30, "kolkata": 16, "hyderabad": 8, "bengaluru": 4, "mumbai": 1, "chennai": 1}
+_SEASON = {1: 0.2, 2: 0.2, 3: 0.3, 4: 0.6, 5: 0.6, 6: 0.1, 7: 0.05, 8: 0.05,
+           9: 0.2, 10: 1.0, 11: 1.0, 12: 0.5}
 
 
 def fire_region(city_id: str, fallback: BBox) -> BBox:
     return _FIRE_REGIONS.get(city_id, fallback)
 
 
-def synthetic_fire_count(city_id: str) -> int:
-    return _DEFAULT_COUNT.get(city_id, 10)
+def synthetic_fire_count(city_id: str, month: int = 11) -> int:
+    return max(0, round(_FIRE_BASE.get(city_id, 6) * _SEASON.get(month, 0.2)))
 
 
 def fetch_live_fires(bbox: BBox, map_key: str, day_range: int = 2,

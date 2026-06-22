@@ -33,7 +33,9 @@ def _gather_fires(city: City, ref_time: datetime):
             return firms.fetch_live_fires(region, settings.firms_map_key, day_range=2)
         except Exception as exc:
             log.warning("FIRMS live failed (%s); using seasonal model", exc)
-    return firms.synthetic_fires(region, ref_time, firms.synthetic_fire_count(city.id))
+    seed = sum(ord(ch) for ch in city.id)
+    count = firms.synthetic_fire_count(city.id, ref_time.month)
+    return firms.synthetic_fires(region, ref_time, count, seed=seed)
 
 
 def _fetch_live(city: City, past_days: int, forecast_days: int) -> CityObservations:

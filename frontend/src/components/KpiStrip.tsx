@@ -8,7 +8,7 @@ function Tile({ label, value, sub, accent }: { label: string; value: React.React
   return (
     <div className="card flex min-w-[110px] flex-1 flex-col justify-center px-3 py-1.5">
       <div className="text-[10px] uppercase tracking-wider text-slate-400">{label}</div>
-      <div className="text-lg font-semibold leading-tight" style={accent ? { color: accent } : undefined}>
+      <div className="font-display text-xl font-semibold leading-tight tabular-nums" style={accent ? { color: accent } : undefined}>
         {value}
       </div>
       {sub && <div className="truncate text-[11px] text-slate-400">{sub}</div>}

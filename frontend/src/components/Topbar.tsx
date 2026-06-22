@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { Wind } from "lucide-react";
+import Logo from "./Logo";
 import type { City, CityIntelligence } from "@/lib/types";
 
 export default function Topbar({
@@ -14,13 +14,13 @@ export default function Topbar({
 }) {
   return (
     <header className="flex h-14 flex-shrink-0 items-center gap-4 border-b border-ink-700 bg-ink-900/80 px-4 backdrop-blur">
-      <div className="flex items-center gap-2">
-        <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-sky-400 to-cyan-600 text-ink-950">
-          <Wind size={18} strokeWidth={2.5} />
+      <div className="flex items-center gap-2.5">
+        <div className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-ink-850/80 shadow-lg">
+          <Logo size={22} />
         </div>
         <div className="leading-tight">
-          <div className="font-semibold tracking-tight text-slate-100">VayuNetra</div>
-          <div className="hidden text-[10px] uppercase tracking-wider text-slate-500 sm:block">
+          <div className="font-display text-[15px] font-semibold tracking-tight text-slate-100">VayuNetra</div>
+          <div className="hidden text-[10px] uppercase tracking-[0.18em] text-slate-500 sm:block">
             Urban Air Quality Intelligence
           </div>
         </div>
