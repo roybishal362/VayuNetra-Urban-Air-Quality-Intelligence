@@ -22,9 +22,8 @@ dist/
 *.tsbuildinfo
 next-env.d.ts
 
-# ---- Data: keep curated snapshots, ignore bulky raw pulls + trained artifacts ----
-data/cache/raw/
-data/cache/tmp/
+# ---- Data: keep curated snapshots (committed); ignore live cache + model binaries ----
+data/cache/
 *.joblib
 *.pkl
 
