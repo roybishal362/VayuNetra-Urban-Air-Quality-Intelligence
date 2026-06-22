@@ -6,7 +6,7 @@ import clsx from "clsx";
 import { api } from "@/lib/api";
 import type { City, CityIntelligence, GridResponse } from "@/lib/types";
 import Topbar from "@/components/Topbar";
-import Legend from "@/components/Legend";
+import BottomStrip from "@/components/BottomStrip";
 import TimeControl from "@/components/TimeControl";
 import type { TimeValue } from "@/components/TimeControl";
 import OverviewPanel from "@/components/OverviewPanel";
@@ -124,19 +124,13 @@ export default function Page() {
         )}
       </div>
 
-      <div className="absolute bottom-3 left-3 z-20 flex items-end gap-2">
-        <Legend />
-        <button
-          onClick={() => setShowIndustry((s) => !s)}
-          className={clsx(
-            "glass flex items-center gap-1.5 px-3 py-2 text-xs transition-colors",
-            showIndustry ? "text-amber-300" : "text-slate-300",
-          )}
-        >
-          <span className="h-2 w-2 rounded-full" style={{ background: "#E67E22" }} />
-          Industry
-        </button>
-      </div>
+      {intel && (
+        <BottomStrip
+          intel={intel}
+          showIndustry={showIndustry}
+          onToggleIndustry={() => setShowIndustry((s) => !s)}
+        />
+      )}
 
       <aside className="glass absolute bottom-3 right-3 top-20 z-20 flex w-[400px] flex-col overflow-hidden">
         <div className="flex flex-shrink-0 border-b border-white/10">
