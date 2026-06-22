@@ -34,7 +34,7 @@ class HorizonMetric(BaseModel):
     persistence_rmse: float
     persistence_mae: float
     improvement_pct: float          # RMSE improvement of model over persistence baseline
-    r2: float = 0.0
+    corr: float = 0.0               # Pearson correlation of prediction with actual (robust on flat series)
     bias: float = 0.0               # mean(pred - actual)
 
 

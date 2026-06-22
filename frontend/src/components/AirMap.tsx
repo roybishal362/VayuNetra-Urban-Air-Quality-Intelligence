@@ -65,6 +65,7 @@ export default function AirMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
   const selectRef = useRef(onSelectZone);
   selectRef.current = onSelectZone;
   const [ready, setReady] = useState(false);
@@ -113,6 +114,7 @@ export default function AirMap({
 
     return () => {
       ro.disconnect();
+      popupRef.current?.remove();
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       map.remove();
@@ -142,6 +144,38 @@ export default function AirMap({
     (map.getSource("industry") as maplibregl.GeoJSONSource | undefined)
       ?.setData({ type: "FeatureCollection", features: feats });
   }, [ready, industrial, showIndustry]);
+
+  // selected-zone callout popup (immediate on-map feedback) + gentle focus
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    popupRef.current?.remove();
+    popupRef.current = null;
+    if (!selectedZoneId) return;
+
+    const z = city.zones.find((zz) => zz.id === selectedZoneId);
+    if (!z) return;
+    const a = attributions.find((x) => x.zone_id === selectedZoneId);
+    const aqi = a?.aqi ?? 0;
+    const color = aqi ? aqiColor(aqi) : "#64748b";
+    const top = a?.contributions?.[0];
+    const html =
+      `<div style="min-width:148px">` +
+      `<div style="font-weight:600;font-size:13px;color:#e2e8f0">${z.name}</div>` +
+      `<div style="display:flex;align-items:center;gap:8px;margin-top:6px">` +
+        `<div style="background:${color};color:${textOn(color)};font-weight:700;font-size:18px;border-radius:6px;padding:1px 8px;font-family:ui-monospace,monospace">${aqi || "—"}</div>` +
+        `<div style="font-size:11px;color:#94a3b8">${a?.category ?? ""}</div>` +
+      `</div>` +
+      (top ? `<div style="margin-top:6px;font-size:11px;color:#cbd5e1"><span style="color:${top.color}">●</span> ${top.label} · ${top.pct.toFixed(0)}%</div>` : "") +
+      `<div style="margin-top:4px;font-size:10px;color:#64748b">full detail in the Zone panel →</div>` +
+      `</div>`;
+
+    popupRef.current = new maplibregl.Popup({ closeButton: true, closeOnClick: false, offset: 16, maxWidth: "240px" })
+      .setLngLat([z.center.lon, z.center.lat])
+      .setHTML(html)
+      .addTo(map);
+    map.easeTo({ center: [z.center.lon, z.center.lat], duration: 500 });
+  }, [ready, selectedZoneId, attributions, city]);
 
   // zone HTML markers (no glyph dependency, full styling control)
   useEffect(() => {

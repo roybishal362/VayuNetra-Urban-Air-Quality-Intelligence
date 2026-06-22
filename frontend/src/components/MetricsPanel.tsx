@@ -40,7 +40,7 @@ export default function MetricsPanel({ intel }: { intel: CityIntelligence }) {
                 <th className="py-1 text-right font-medium">RMSE</th>
                 <th className="py-1 text-right font-medium">Persist.</th>
                 <th className="py-1 text-right font-medium">Gain</th>
-                <th className="py-1 text-right font-medium">R²</th>
+                <th className="py-1 text-right font-medium">Corr</th>
               </tr>
             </thead>
             <tbody className="font-mono text-slate-200">
@@ -50,7 +50,7 @@ export default function MetricsPanel({ intel }: { intel: CityIntelligence }) {
                   <td className="py-1 text-right">{h.rmse.toFixed(1)}</td>
                   <td className="py-1 text-right text-slate-400">{h.persistence_rmse.toFixed(1)}</td>
                   <td className="py-1 text-right text-emerald-400">+{h.improvement_pct.toFixed(0)}%</td>
-                  <td className="py-1 text-right">{h.r2.toFixed(2)}</td>
+                  <td className="py-1 text-right">{h.corr.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -95,7 +95,7 @@ export default function MetricsPanel({ intel }: { intel: CityIntelligence }) {
         <div className="card p-3">
           <div className="mb-1 flex items-baseline justify-between">
             <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Predicted vs actual</div>
-            {head && <span className="font-mono text-xs text-slate-300">R² {head.r2.toFixed(2)}</span>}
+            {head && <span className="font-mono text-xs text-slate-300">r {head.corr.toFixed(2)}</span>}
           </div>
           <div className="h-44 w-full">
             <ResponsiveContainer>

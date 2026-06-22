@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
 import { api } from "@/lib/api";
@@ -37,6 +37,7 @@ export default function Page() {
   const [showIndustry, setShowIndustry] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api.cities()
@@ -64,6 +65,10 @@ export default function Page() {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [cityId, time, intel]);
+
+  useEffect(() => {
+    sidebarRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [tab, selectedZoneId]);
 
   const city = cities.find((c) => c.id === cityId) ?? null;
   const attribution = intel?.attributions.find((a) => a.zone_id === selectedZoneId);
@@ -155,7 +160,7 @@ export default function Page() {
               </button>
             ))}
           </div>
-          <div key={tab} className="vn-fade min-h-0 flex-1 overflow-y-auto p-3">
+          <div key={tab} ref={sidebarRef} className="vn-fade min-h-0 flex-1 overflow-y-auto p-3">
             {tab === "overview" &&
               (intel ? (
                 <OverviewPanel intel={intel} onSelectZone={onSelectZone} onCity={setCityId} activeCityId={cityId} />

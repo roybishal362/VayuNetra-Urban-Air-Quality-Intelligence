@@ -45,7 +45,7 @@ export interface EnforcementItem {
 export interface HorizonMetric {
   horizon_h: number; rmse: number; mae: number;
   persistence_rmse: number; persistence_mae: number; improvement_pct: number;
-  r2: number; bias: number;
+  corr: number; bias: number;
 }
 export interface BacktestPoint { ts: string; actual: number; predicted: number }
 export interface ScatterPoint { actual: number; predicted: number }
