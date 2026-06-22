@@ -36,6 +36,17 @@ def _model_for(city_id: str, obs: CityObservations, city: City) -> ForecastModel
     return model
 
 
+def get_model(city_id: str, mode: str = "snapshot") -> ForecastModel:
+    """Load (or lazily train) the forecast model for a city — used by the on-demand endpoints."""
+    city = get_city(city_id)
+    if city is None:
+        raise KeyError(city_id)
+    model = ForecastModel.load(city_id)
+    if model is None:
+        model = _model_for(city_id, get_city_observations(city_id, mode=mode), city)
+    return model
+
+
 def _summary(city: City, attributions, enforcement, metrics: ForecastMetrics | None) -> str:
     if not attributions:
         return f"No data available for {city.name}."

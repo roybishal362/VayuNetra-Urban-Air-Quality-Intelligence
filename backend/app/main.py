@@ -64,6 +64,6 @@ def health():
     }
 
 
-# Routers (mounted incrementally as subsystems land)
-# from app.api import cities, monitor, forecast, attribution, enforcement, advisory
-# app.include_router(cities.router)
+from app.api.routes import router as api_router  # noqa: E402
+
+app.include_router(api_router)
