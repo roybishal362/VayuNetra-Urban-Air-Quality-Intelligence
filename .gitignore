@@ -37,3 +37,6 @@ data/cache/
 .DS_Store
 Thumbs.db
 .idea/
+
+# Raw AI-generated logo source images (keep local; logo.png is the derived asset)
+frontend/public/brand/ChatGPT*
