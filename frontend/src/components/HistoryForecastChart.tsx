@@ -39,8 +39,8 @@ export default function HistoryForecastChart({
         <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: -18 }}>
           <defs>
             <linearGradient id="fcband" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.25} />
-              <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.04} />
+              <stop offset="0%" stopColor="#F4F5F6" stopOpacity={0.2} />
+              <stop offset="100%" stopColor="#F4F5F6" stopOpacity={0.03} />
             </linearGradient>
           </defs>
           <ReferenceLine x={0} stroke="#64748b" strokeDasharray="3 3"
@@ -50,16 +50,16 @@ export default function HistoryForecastChart({
             tick={{ fill: "#64748b", fontSize: 11 }} stroke="#334155" />
           <YAxis tick={{ fill: "#64748b", fontSize: 11 }} stroke="#334155" width={40} />
           <Tooltip
-            contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8, fontSize: 12 }}
+            contentStyle={{ background: "rgba(11,12,14,0.92)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 12, color: "#C9CBD0" }}
             labelFormatter={(v) => (v === 0 ? "now" : Number(v) > 0 ? `+${v}h forecast` : `${-Number(v)}h ago`)}
             formatter={(val: number | string, name: string) => [
               typeof val === "number" ? `${val.toFixed(0)} µg/m³` : val,
               name === "obs" ? "observed" : name === "fc" ? "forecast" : name,
             ]} />
           <Area type="monotone" dataKey="hi" stroke="none" fill="url(#fcband)" isAnimationActive={false} connectNulls={false} />
-          <Area type="monotone" dataKey="lo" stroke="none" fill="#0b1120" isAnimationActive={false} connectNulls={false} />
+          <Area type="monotone" dataKey="lo" stroke="none" fill="#08090A" isAnimationActive={false} connectNulls={false} />
           <Line type="monotone" dataKey="obs" stroke="#94a3b8" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls={false} />
-          <Line type="monotone" dataKey="fc" stroke="#38bdf8" strokeWidth={2} strokeDasharray="5 3" dot={false} isAnimationActive={false} connectNulls={false} />
+          <Line type="monotone" dataKey="fc" stroke="#F4F5F6" strokeWidth={2} strokeDasharray="5 3" dot={false} isAnimationActive={false} connectNulls={false} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>

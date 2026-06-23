@@ -37,8 +37,8 @@ export default function ForecastChart({ points }: { points: ForecastPoint[] }) {
         <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: -18 }}>
           <defs>
             <linearGradient id="band" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.28} />
-              <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.05} />
+              <stop offset="0%" stopColor="#F4F5F6" stopOpacity={0.22} />
+              <stop offset="100%" stopColor="#F4F5F6" stopOpacity={0.03} />
             </linearGradient>
           </defs>
           <ReferenceLine y={60} stroke="#334155" strokeDasharray="3 3" />
@@ -48,8 +48,8 @@ export default function ForecastChart({ points }: { points: ForecastPoint[] }) {
           <YAxis tick={{ fill: "#64748b", fontSize: 11 }} stroke="#334155" width={40} />
           <Tooltip content={<CustomTooltip />} />
           <Area type="monotone" dataKey="high" stroke="none" fill="url(#band)" isAnimationActive={false} />
-          <Area type="monotone" dataKey="low" stroke="none" fill="#0b1120" isAnimationActive={false} />
-          <Line type="monotone" dataKey="pm25" stroke="#38bdf8" strokeWidth={2} dot={false} isAnimationActive={false} />
+          <Area type="monotone" dataKey="low" stroke="none" fill="#08090A" isAnimationActive={false} />
+          <Line type="monotone" dataKey="pm25" stroke="#F4F5F6" strokeWidth={2} dot={false} isAnimationActive={false} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>

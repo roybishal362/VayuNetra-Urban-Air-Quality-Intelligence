@@ -66,7 +66,7 @@ export default function OverviewPanel({
                 <div className="h-full rounded" style={{ width: `${(c.avg_aqi / maxAqi) * 100}%`, background: aqiColor(c.avg_aqi) }} />
               </div>
               <span className="w-8 text-right font-mono text-xs" style={{ color: aqiColor(c.avg_aqi) }}>{c.avg_aqi}</span>
-              <span className="w-10 text-right text-[11px] text-emerald-400">+{c.improvement_pct.toFixed(0)}%</span>
+              <span className="w-10 text-right font-mono text-[11px] text-text-mid">+{c.improvement_pct.toFixed(0)}%</span>
             </button>
           ))}
           {!compare && <div className="px-2 text-xs text-slate-500">Loading national snapshot…</div>}
@@ -91,7 +91,7 @@ export default function OverviewPanel({
         <div className="card p-3">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Health impact</div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <Stat v={compact(h.exposed_population)} l="exposed" c="#F29C33" />
+            <Stat v={compact(h.exposed_population)} l="exposed" />
             <Stat v={compact(h.severe_population)} l="in severe" c="#E93F33" />
             <Stat v={String(h.vulnerable_sites_affected)} l="schools/hosp" />
           </div>

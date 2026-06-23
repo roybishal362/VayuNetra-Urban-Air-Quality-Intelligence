@@ -28,7 +28,7 @@ export default function EnforcementPage() {
           </div>
         )}
 
-        <EnforcementPanel city={city} items={intel.enforcement} onSelectZone={() => router.push("/")} />
+        <EnforcementPanel city={city} items={intel.enforcement} onSelectZone={() => router.push("/console")} />
       </div>
     </div>
   );

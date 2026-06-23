@@ -69,7 +69,7 @@ export default function WhatIfCard({ city, attribution }: { city: City; attribut
           <AqiBox aqi={sim.original_aqi} label="now" />
           <span className="text-slate-500">→</span>
           <AqiBox aqi={sim.new_aqi} label="after" />
-          <span className="text-sm font-semibold" style={{ color: sim.delta_aqi < 0 ? "#34d399" : "#94a3b8" }}>
+          <span className="font-mono text-sm font-semibold" style={{ color: sim.delta_aqi < 0 ? "#55A84F" : sim.delta_aqi > 0 ? "#E93F33" : "#9A9CA3" }}>
             {sim.delta_aqi <= 0 ? sim.delta_aqi : `+${sim.delta_aqi}`}
           </span>
         </div>

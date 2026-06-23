@@ -19,7 +19,7 @@ export default function ComparePage() {
   const maxAqi = Math.max(...data.map((c) => c.avg_aqi), 1);
   const totalExposed = data.reduce((s, c) => s + c.exposed, 0);
 
-  const open = (id: string) => { setCityId(id); router.push("/"); };
+  const open = (id: string) => { setCityId(id); router.push("/console"); };
 
   return (
     <div className="h-full overflow-y-auto p-6">
@@ -48,11 +48,11 @@ export default function ComparePage() {
               </div>
               <div className="w-14 text-right font-mono text-lg font-bold" style={{ color: aqiColor(c.avg_aqi) }}>{c.avg_aqi}</div>
               <div className="hidden w-24 text-right sm:block">
-                <div className="font-mono text-sm text-amber-400">{compact(c.exposed)}</div>
+                <div className="font-mono text-sm text-text-mid">{compact(c.exposed)}</div>
                 <div className="text-[10px] uppercase tracking-wider text-slate-500">exposed</div>
               </div>
               <div className="hidden w-20 text-right md:block">
-                <div className="font-mono text-sm text-emerald-400">+{c.improvement_pct.toFixed(0)}%</div>
+                <div className="font-mono text-sm text-text-hi">+{c.improvement_pct.toFixed(0)}%</div>
                 <div className="text-[10px] uppercase tracking-wider text-slate-500">skill</div>
               </div>
               <div className="hidden w-16 text-right md:block">

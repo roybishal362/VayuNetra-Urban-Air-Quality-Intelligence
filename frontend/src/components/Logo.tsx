@@ -1,28 +1,56 @@
-export default function Logo({ size = 30, className = "" }: { size?: number; className?: string }) {
+/**
+ * VayuNetra mark — "the eye on the air".
+ * An almond lens (Netra / eye) that is simultaneously the airflow it watches:
+ * two streamlines sweep across the gaze (Vayu / wind). Monochrome by default
+ * (inherits currentColor); `accent` paints the pupil with the AQI gradient —
+ * the single place colour is allowed back into the brand.
+ */
+export default function Logo({
+  size = 28,
+  className = "",
+  accent = false,
+  streamlines = true,
+}: {
+  size?: number;
+  className?: string;
+  accent?: boolean;
+  streamlines?: boolean;
+}) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" className={className}
-         role="img" aria-label="VayuNetra logo">
-      <defs>
-        <linearGradient id="vn-grad" x1="2" y1="4" x2="30" y2="28" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#7dd3fc" />
-          <stop offset="0.55" stopColor="#38bdf8" />
-          <stop offset="1" stopColor="#22d3ee" />
-        </linearGradient>
-        <radialGradient id="vn-pupil" cx="0.5" cy="0.45" r="0.6">
-          <stop stopColor="#e0f2fe" />
-          <stop offset="1" stopColor="#0ea5e9" />
-        </radialGradient>
-      </defs>
-      {/* eye = lens of airflow */}
-      <path d="M2.5 16 C8 9, 24 9, 29.5 16 C24 23, 8 23, 2.5 16 Z"
-            stroke="url(#vn-grad)" strokeWidth="2" strokeLinejoin="round" fill="none" />
-      {/* iris */}
-      <circle cx="16" cy="16" r="5.2" stroke="url(#vn-grad)" strokeWidth="1.5" fill="none" />
-      {/* sensor / pupil */}
-      <circle cx="16" cy="16" r="2.4" fill="url(#vn-pupil)" />
-      {/* wind currents */}
-      <path d="M5 6.6 L12 6.6" stroke="#7dd3fc" strokeWidth="1.4" strokeLinecap="round" opacity="0.65" />
-      <path d="M20 25.6 L27 25.6" stroke="#7dd3fc" strokeWidth="1.4" strokeLinecap="round" opacity="0.45" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      role="img"
+      aria-label="VayuNetra"
+      className={className}
+      stroke="currentColor"
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {accent && (
+        <defs>
+          <linearGradient id="vn-aqi-pupil" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#55A84F" />
+            <stop offset="0.5" stopColor="#FFF833" />
+            <stop offset="1" stopColor="#E93F33" />
+          </linearGradient>
+        </defs>
+      )}
+      {streamlines && (
+        <>
+          {/* wind sweeping across the gaze — recede at favicon scale */}
+          <path d="M3.4 12.6c4.8-1.8 8.2-2.1 10.8-1.1" opacity="0.45" />
+          <path d="M28.6 19.4c-4.8 1.8-8.2 2.1-10.8 1.1" opacity="0.45" />
+        </>
+      )}
+      {/* almond lens = eye = aperture */}
+      <path d="M5.5 16c4-5.4 8-7.6 10.5-7.6s6.5 2.2 10.5 7.6" />
+      <path d="M5.5 16c4 5.4 8 7.6 10.5 7.6s6.5-2.2 10.5-7.6" />
+      {/* pupil / sensor (optically centred slightly low in the lens) */}
+      <circle cx="16" cy="16.3" r="2.2" fill={accent ? "url(#vn-aqi-pupil)" : "currentColor"} stroke="none" />
     </svg>
   );
 }

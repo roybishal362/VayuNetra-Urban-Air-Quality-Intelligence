@@ -28,10 +28,10 @@ export default function KpiStrip({ intel }: { intel: CityIntelligence }) {
     <div className="flex flex-shrink-0 gap-2 border-b border-ink-700 bg-ink-900/40 px-4 py-2">
       <Tile label="City AQI" value={h?.avg_aqi ?? "—"} sub={h?.worst_category} accent={h ? aqiColor(h.avg_aqi) : undefined} />
       <Tile label="Worst ward" value={worst ? worst.aqi : "—"} sub={worst?.zone_name} accent={worst ? aqiColor(worst.aqi) : undefined} />
-      <Tile label="People exposed" value={h ? compact(h.exposed_population) : "—"} sub="Poor air or worse" accent="#F29C33" />
+      <Tile label="People exposed" value={h ? compact(h.exposed_population) : "—"} sub="Poor air or worse" />
       <Tile label="Vulnerable sites" value={h?.vulnerable_sites_affected ?? "—"} sub="schools · hospitals" />
       <Tile label="Active alerts" value={intel.alerts.length} sub={severe ? `${severe} severe` : "monitored"} accent={severe ? "#E93F33" : undefined} />
-      <Tile label="Forecast skill" value={skill != null ? `+${skill.toFixed(0)}%` : "—"} sub="vs persistence" accent="#34d399" />
+      <Tile label="Forecast skill" value={skill != null ? `+${skill.toFixed(0)}%` : "—"} sub="vs persistence" />
     </div>
   );
 }

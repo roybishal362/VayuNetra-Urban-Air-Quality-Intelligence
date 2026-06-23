@@ -16,13 +16,13 @@ import ZonePanel from "@/components/ZonePanel";
 
 const AirMap = dynamic(() => import("@/components/AirMap"), {
   ssr: false,
-  loading: () => <div className="absolute inset-0 grid place-items-center text-slate-500">Loading map…</div>,
+  loading: () => <div className="absolute inset-0 grid place-items-center text-text-low">Loading map…</div>,
 });
 
 type Tab = "overview" | "enforce" | "zone" | "metrics";
 
 function Placeholder({ text }: { text: string }) {
-  return <div className="grid h-full place-items-center p-6 text-center text-sm text-slate-500">{text}</div>;
+  return <div className="grid h-full place-items-center p-6 text-center text-sm text-text-low">{text}</div>;
 }
 
 export default function CommandCenter() {
@@ -53,14 +53,14 @@ export default function CommandCenter() {
     return (
       <div className="grid h-full place-items-center p-6">
         <div className="card max-w-md p-6 text-center">
-          <h1 className="text-lg font-semibold text-rose-400">Cannot reach the API</h1>
-          <p className="mt-2 text-sm text-slate-400">{error}</p>
-          <p className="mt-3 text-xs text-slate-500">Expected at <code className="text-slate-300">{api.base}</code>.</p>
+          <h1 className="text-lg font-semibold text-[#E93F33]">Cannot reach the API</h1>
+          <p className="mt-2 text-sm text-text-mid">{error}</p>
+          <p className="mt-3 text-xs text-text-low">Expected at <code className="text-text">{api.base}</code>.</p>
         </div>
       </div>
     );
   }
-  if (!city) return <div className="grid h-full place-items-center text-slate-400">Loading…</div>;
+  if (!city) return <div className="grid h-full place-items-center text-text-mid">Loading…</div>;
 
   return (
     <div className="flex h-full">
@@ -78,12 +78,12 @@ export default function CommandCenter() {
           <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-2">
             <TimeControl value={time} onChange={setTime} />
             {time.layer === "forecast" && (
-              <div className="card px-3 py-1.5 text-xs text-slate-200">Predicted AQI · +{time.horizon}h</div>
+              <div className="glass px-3 py-1.5 font-mono text-xs text-text">Predicted AQI · +{time.horizon}h</div>
             )}
           </div>
           {loading && (
-            <div className="absolute inset-0 z-20 grid place-items-center bg-ink-950/40 backdrop-blur-sm">
-              <div className="card px-4 py-3 text-sm text-slate-200">Building intelligence…</div>
+            <div className="absolute inset-0 z-20 grid place-items-center bg-vn-base/40 backdrop-blur-sm">
+              <div className="glass px-4 py-3 text-sm text-text">Building intelligence…</div>
             </div>
           )}
         </div>
@@ -92,22 +92,23 @@ export default function CommandCenter() {
         )}
       </div>
 
-      <aside className="flex w-[400px] flex-shrink-0 flex-col border-l border-ink-700 bg-ink-900/60 backdrop-blur xl:w-[440px]">
-        <div className="flex flex-shrink-0 border-b border-ink-700">
+      <aside className="flex w-[400px] flex-shrink-0 flex-col border-l border-white/[0.06] bg-vn-900/60 backdrop-blur-xl xl:w-[440px]">
+        <div className="flex flex-shrink-0 border-b border-white/[0.06] px-2 pt-2">
           {(["overview", "enforce", "zone", "metrics"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={clsx(
-                "flex-1 py-2.5 text-sm font-medium capitalize transition-colors",
-                tab === t ? "border-b-2 border-brand text-brand" : "text-slate-400 hover:text-slate-200",
+                "relative flex-1 rounded-t-lg py-2.5 text-sm font-medium capitalize transition-colors duration-fast",
+                tab === t ? "text-text-hi" : "text-text-mid hover:text-text",
               )}
             >
               {t === "enforce" ? "Enforce" : t === "metrics" ? "Validation" : t}
+              {tab === t && <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-text-hi" />}
             </button>
           ))}
         </div>
-        <div key={tab} ref={sidebarRef} className="vn-fade min-h-0 flex-1 overflow-y-auto p-3">
+        <div key={`${tab}-${selectedZoneId ?? ""}`} ref={sidebarRef} className="vn-fade min-h-0 flex-1 overflow-y-auto p-3">
           {tab === "overview" &&
             (intel ? <OverviewPanel intel={intel} onSelectZone={onSelectZone} onCity={setCityId} activeCityId={cityId} /> : <Placeholder text="Loading overview…" />)}
           {tab === "enforce" &&

@@ -4,7 +4,7 @@ import clsx from "clsx";
 import type { CityIntelligence } from "@/lib/types";
 import { AQI_BANDS, aqiColor } from "@/lib/aqi";
 
-function Spark({ values, color = "#38bdf8" }: { values: number[]; color?: string }) {
+function Spark({ values, color = "#C9CBD0" }: { values: number[]; color?: string }) {
   if (values.length < 2) return <div className="h-9 w-32" />;
   const w = 128, h = 36;
   const min = Math.min(...values), max = Math.max(...values);
@@ -20,7 +20,7 @@ function Spark({ values, color = "#38bdf8" }: { values: number[]; color?: string
 function Seg({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-shrink-0 flex-col gap-1">
-      <div className="text-[9px] uppercase tracking-wider text-slate-500">{title}</div>
+      <div className="eyebrow">{title}</div>
       <div>{children}</div>
     </div>
   );
@@ -47,12 +47,12 @@ export default function BottomStrip({
   const worst = [...intel.attributions].sort((a, b) => b.aqi - a.aqi).slice(0, 3);
 
   return (
-    <div className="flex h-[88px] flex-shrink-0 items-center gap-6 overflow-x-auto border-t border-ink-700 bg-ink-900/60 px-4 backdrop-blur">
+    <div className="flex h-[88px] flex-shrink-0 items-center gap-6 overflow-x-auto border-t border-white/[0.06] bg-vn-900/60 px-4 backdrop-blur-xl">
       <Seg title="AQI scale">
         <div className="flex overflow-hidden rounded">
           {AQI_BANDS.map((b) => <span key={b.label} className="h-2.5 w-7" style={{ background: b.color }} title={b.label} />)}
         </div>
-        <div className="mt-1 flex justify-between text-[8px] text-slate-500"><span>Good</span><span>Severe</span></div>
+        <div className="mt-1 flex justify-between text-[8px] text-text-low"><span>Good</span><span>Severe</span></div>
       </Seg>
 
       <Seg title="City PM2.5 · recent backtest">
@@ -61,17 +61,17 @@ export default function BottomStrip({
 
       <Seg title="Forecast skill vs persistence">
         <div className="flex items-end gap-2">
-          <span className="font-display text-2xl font-bold leading-none text-emerald-400">
+          <span className="font-display text-2xl font-semibold leading-none tabular-nums text-text-hi">
             +{skill[0]?.improvement_pct.toFixed(0) ?? 0}%
           </span>
           <div className="flex gap-1">
             {skill.map((s) => (
               <div key={s.horizon_h} className="text-center">
-                <div className="relative h-9 w-3 rounded-sm bg-ink-700">
-                  <div className="absolute bottom-0 w-full rounded-sm bg-emerald-500"
+                <div className="relative h-9 w-3 rounded-sm bg-white/[0.08]">
+                  <div className="absolute bottom-0 w-full rounded-sm bg-text-hi/80"
                        style={{ height: `${Math.min(100, Math.max(6, s.improvement_pct))}%` }} />
                 </div>
-                <div className="text-[8px] text-slate-500">{s.horizon_h}h</div>
+                <div className="font-mono text-[8px] text-text-low">{s.horizon_h}h</div>
               </div>
             ))}
           </div>
@@ -82,7 +82,7 @@ export default function BottomStrip({
         <div className="flex h-3 w-44 overflow-hidden rounded">
           {mix.map((m) => <div key={m.label} style={{ width: `${(m.sum / total) * 100}%`, background: m.color }} />)}
         </div>
-        <div className="mt-1 flex flex-wrap gap-x-2 text-[9px] text-slate-400">
+        <div className="mt-1 flex flex-wrap gap-x-2 text-[9px] text-text-mid">
           {mix.slice(0, 3).map((m) => (
             <span key={m.label}><span style={{ color: m.color }}>●</span> {m.label.split(" / ")[0]} {((m.sum / total) * 100).toFixed(0)}%</span>
           ))}
@@ -93,8 +93,8 @@ export default function BottomStrip({
         <div className="space-y-0.5">
           {worst.map((z) => (
             <div key={z.zone_id} className="flex items-center gap-2 text-xs">
-              <span className="w-7 text-right font-mono" style={{ color: aqiColor(z.aqi) }}>{z.aqi}</span>
-              <span className="w-24 truncate text-slate-300">{z.zone_name}</span>
+              <span className="w-7 text-right font-mono tabular-nums" style={{ color: aqiColor(z.aqi) }}>{z.aqi}</span>
+              <span className="w-24 truncate text-text">{z.zone_name}</span>
             </div>
           ))}
         </div>
@@ -103,8 +103,10 @@ export default function BottomStrip({
       <button
         onClick={onToggleIndustry}
         className={clsx(
-          "ml-auto flex flex-shrink-0 items-center gap-1.5 self-center rounded-lg border border-white/10 px-3 py-2 text-xs transition-colors",
-          showIndustry ? "bg-amber-500/15 text-amber-300" : "text-slate-300 hover:bg-ink-700",
+          "ml-auto flex flex-shrink-0 items-center gap-1.5 self-center rounded-lg border px-3 py-2 text-xs font-medium transition-colors duration-fast",
+          showIndustry
+            ? "border-white/[0.14] bg-white/[0.08] text-text-hi"
+            : "border-white/[0.06] text-text hover:border-white/[0.12] hover:bg-white/[0.04]",
         )}
       >
         <span className="h-2 w-2 rounded-full" style={{ background: "#E67E22" }} />

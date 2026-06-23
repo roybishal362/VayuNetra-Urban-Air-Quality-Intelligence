@@ -4,6 +4,25 @@
 
 :root {
   color-scheme: dark;
+
+  /* Glass surfaces — three depths. rgba so the map/void shows through. */
+  --glass-low: rgba(22, 23, 25, 0.55);
+  --glass-mid: rgba(16, 17, 19, 0.62);
+  --glass-high: rgba(11, 12, 14, 0.74);
+
+  /* Borders — always translucent white (light catching an edge), never grey paint. */
+  --hairline: rgba(255, 255, 255, 0.06);
+  --hairline-strong: rgba(255, 255, 255, 0.1);
+  --hairline-bright: rgba(255, 255, 255, 0.16);
+  --lip: rgba(255, 255, 255, 0.05);
+
+  /* AQI data gradient — the ONLY hues in the product (CPCB bands). */
+  --aqi-good: #55a84f;
+  --aqi-sat: #a3c853;
+  --aqi-mod: #fff833;
+  --aqi-poor: #f29c33;
+  --aqi-vpoor: #e93f33;
+  --aqi-severe: #af2d24;
 }
 
 html,
@@ -12,75 +31,145 @@ body {
 }
 
 body {
-  @apply bg-ink-950 text-slate-100 antialiased;
-  font-feature-settings: "tnum" 1, "cv11" 1;
+  @apply bg-vn-base text-text antialiased;
+  font-feature-settings: "tnum" 1, "cv11" 1, "ss01" 1;
+  /* one neutral vignette — no colored glows */
   background-image:
-    radial-gradient(1100px 520px at 82% -8%, rgba(56, 189, 248, 0.07), transparent 60%),
-    radial-gradient(900px 500px at 6% 112%, rgba(34, 211, 238, 0.05), transparent 55%);
+    radial-gradient(1200px 600px at 50% -12%, rgba(255, 255, 255, 0.028), transparent 60%);
   background-attachment: fixed;
 }
 
-/* thin custom scrollbars */
+/* thin monochrome scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-ink-600 rounded-full;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.14);
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 
 @layer components {
+  /* Workhorse frosted card */
   .card {
-    @apply rounded-xl border border-white/[0.06] bg-ink-900/70 backdrop-blur-md;
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04), 0 8px 24px -10px rgba(0, 0, 0, 0.55);
+    @apply rounded-xl border border-white/[0.06] bg-vn-800/60 backdrop-blur-xl;
+    box-shadow:
+      inset 0 1px 0 0 var(--lip),
+      0 1px 2px rgba(0, 0, 0, 0.4),
+      0 12px 32px -16px rgba(0, 0, 0, 0.7);
+  }
+  .card-hover {
+    @apply transition-colors duration-fast ease-standard hover:border-white/10 hover:bg-vn-800/75;
+  }
+  /* High-depth glass: overlays, floating-over-map, palettes */
+  .glass {
+    @apply rounded-2xl border border-white/10 bg-vn-900/[0.72] backdrop-blur-2xl;
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+      0 24px 64px -24px rgba(0, 0, 0, 0.85);
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
   }
-  .glass {
-    @apply rounded-xl border border-white/10 bg-ink-900/55 backdrop-blur-xl;
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06), 0 16px 48px -16px rgba(0, 0, 0, 0.75);
+  /* The signature all-caps eyebrow label */
+  .eyebrow {
+    @apply text-[10px] font-medium uppercase tracking-[0.14em] text-text-mid;
+  }
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-text-hi px-3.5 py-2 text-sm font-medium text-vn-base
+           transition-[transform,background-color] duration-fast ease-standard hover:bg-white active:scale-[0.98]
+           focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/25 disabled:opacity-40;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-vn-750/60 px-3 py-2
+           text-sm font-medium text-text backdrop-blur-md transition-colors duration-fast ease-standard
+           hover:border-white/[0.14] hover:bg-vn-700/70 hover:text-text-hi active:scale-[0.98]
+           focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20;
   }
 }
 
-/* MapLibre popup + control theming to match the dark UI */
+/* Monochrome shimmer skeleton */
+.vn-skeleton {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  background-size: 200% 100%;
+  animation: vn-shimmer 1.4s infinite linear;
+}
+
+/* MapLibre control + popup theming → glass, monochrome */
+.maplibregl-ctrl-group {
+  background: var(--glass-high) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px !important;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 12px 32px -16px rgba(0, 0, 0, 0.8) !important;
+}
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.maplibregl-ctrl button .maplibregl-ctrl-icon {
+  filter: invert(1) brightness(1.6);
+}
+.maplibregl-ctrl-attrib.maplibregl-compact {
+  background: var(--glass-high) !important;
+  color: var(--tw-prose-body);
+  border-radius: 8px;
+}
+.maplibregl-ctrl-attrib a {
+  color: #9a9ca3 !important;
+}
 .maplibregl-popup .maplibregl-popup-content {
-  background: #0f172a;
+  background: var(--glass-high);
   color: #e2e8f0;
-  border: 1px solid #334155;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 24px 64px -24px rgba(0, 0, 0, 0.85);
   padding: 10px 12px;
 }
 .maplibregl-popup .maplibregl-popup-tip {
-  border-top-color: #0f172a !important;
-  border-bottom-color: #0f172a !important;
-}
-.maplibregl-popup-close-button {
-  color: #94a3b8;
-  font-size: 16px;
-  padding: 2px 6px;
-}
-.maplibregl-ctrl-group {
-  @apply bg-ink-850 border border-ink-600 !important;
-}
-.maplibregl-ctrl button {
-  filter: invert(1) hue-rotate(180deg);
+  display: none;
 }
 
-/* crisis-zone marker pulse + panel fade-in */
+/* ── Motion ───────────────────────────────────────────────────────── */
 @keyframes vn-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(233, 63, 51, 0.5); }
-  70% { box-shadow: 0 0 0 9px rgba(233, 63, 51, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(233, 63, 51, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(175, 45, 36, 0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(175, 45, 36, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(175, 45, 36, 0); }
 }
 .vn-pulse { animation: vn-pulse 1.8s ease-out infinite; }
 
 @keyframes vn-fade {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
-.vn-fade { animation: vn-fade 0.25s ease-out; }
+.vn-fade { animation: vn-fade 0.24s cubic-bezier(0.16, 1, 0.3, 1); }
+
+@keyframes vn-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes vn-breathe {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+.vn-breathe { animation: vn-breathe 2s ease-in-out infinite; }
+
+/* Respect reduced-motion: kill animation but keep AQI color updates (handled in JS). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
