@@ -17,15 +17,17 @@ export default function Reveal({
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || typeof IntersectionObserver === "undefined") { setShown(true); return; }
     const io = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) { setShown(true); io.disconnect(); }
       },
-      { threshold: 0.12 },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
     );
     io.observe(el);
-    return () => io.disconnect();
+    // safety: never leave content invisible if the observer never fires
+    const t = setTimeout(() => setShown(true), 1600);
+    return () => { io.disconnect(); clearTimeout(t); };
   }, []);
 
   return (
