@@ -64,10 +64,9 @@ export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; 
       style: STYLE,
       center: [center.lon, center.lat],
       zoom: 9.7,
-      pitch: 58,
+      pitch: 56,
       bearing: -22,
       interactive: false,
-      antialias: true,
       attributionControl: false,
     });
     mapRef.current = map;
@@ -89,14 +88,6 @@ export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; 
           },
         });
       }
-      try {
-        (map as unknown as { setSky?: (s: object) => void }).setSky?.({
-          "sky-color": "#0B0C0E", "horizon-color": "#161719", "fog-color": "#08090A",
-        });
-      } catch { /* noop */ }
-      try {
-        map.setLight?.({ anchor: "viewport", color: "#ffffff", intensity: 0.4, position: [1.3, 90, 35] });
-      } catch { /* noop */ }
       map.resize();
       setReady(true);
     };
