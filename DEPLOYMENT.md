@@ -39,11 +39,12 @@ Everything needed is already in the repo (`render.yaml`, `frontend/.env.example`
 3. **IMPORTANT — set the Root Directory to `frontend`:**
    - On the import screen find **Root Directory** ➜ **Edit** ➜ choose **`frontend`**.
    - Framework should auto-detect as **Next.js** (leave build settings default).
-4. Open **Environment Variables** and add **one**:
-   | Name | Value |
-   |---|---|
-   | `NEXT_PUBLIC_API_BASE` | your Render URL from Part 1, e.g. `https://vayunetra-api.onrender.com` |
-   *(no trailing slash, no quotes)*
+4. Open **Environment Variables** and add:
+   | Name | Value | Required? |
+   |---|---|---|
+   | `NEXT_PUBLIC_API_BASE` | your Render URL from Part 1, e.g. `https://vayunetra-api.onrender.com` | **yes** |
+   | `NEXT_PUBLIC_MAPTILER_KEY` | a free key from [maptiler.com](https://www.maptiler.com/) — enables premium **vector** maps (Dark Matter / Streets / Satellite-Hybrid) | optional |
+   *(no trailing slash, no quotes. Without the MapTiler key the map still works on detailed keyless raster tiles — just not vector.)*
 5. Click **Deploy**. Wait ~1–2 minutes.
 6. Open the Vercel URL it gives you (e.g. `https://vayunetra.vercel.app`) — that's your live app. 🎉
 

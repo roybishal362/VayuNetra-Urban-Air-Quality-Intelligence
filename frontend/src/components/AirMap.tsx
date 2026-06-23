@@ -8,45 +8,42 @@ import { aqiColor, textOn, AQI_BANDS } from "@/lib/aqi";
 import { hasWebGL } from "@/lib/webgl";
 import StaticMap from "./StaticMap";
 
-const STYLE: StyleSpecification = {
+export type Basemap = "dark" | "streets" | "sat";
+
+// Premium vector basemaps via MapTiler (set NEXT_PUBLIC_MAPTILER_KEY). Falls back to
+// detailed keyless raster tiles when no key is present, so the map always works.
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
+const VECTOR = !!MAPTILER_KEY;
+const MAPTILER_STYLE: Record<Basemap, string> = {
+  dark: `https://api.maptiler.com/maps/darkmatter/style.json?key=${MAPTILER_KEY}`,
+  streets: `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`,
+  sat: `https://api.maptiler.com/maps/hybrid/style.json?key=${MAPTILER_KEY}`,
+};
+
+// Keyless raster fallback — all three detailed + fully visible (un-muted).
+const RASTER_STYLE: StyleSpecification = {
   version: 8,
   sources: {
     carto: {
       type: "raster",
-      tiles: [
-        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-      ],
-      tileSize: 256,
-      attribution: "© OpenStreetMap, © CARTO",
+      tiles: ["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
+      tileSize: 256, attribution: "© OpenStreetMap, © CARTO",
     },
     voyager: {
       type: "raster",
-      tiles: [
-        "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-        "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-        "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-      ],
-      tileSize: 256,
-      attribution: "© OpenStreetMap, © CARTO",
+      tiles: ["https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"],
+      tileSize: 256, attribution: "© OpenStreetMap, © CARTO",
     },
     esri: {
       type: "raster",
-      tiles: [
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      ],
-      tileSize: 256,
-      attribution: "© Esri, Maxar, Earthstar Geographics",
+      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+      tileSize: 256, attribution: "© Esri, Maxar, Earthstar Geographics",
     },
   },
   layers: [
     { id: "bg", type: "background", paint: { "background-color": "#08090A" } },
-    // Detailed dark street map — fully visible (only lightly desaturated to keep the theme).
     { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 1, "raster-saturation": -0.2, "raster-contrast": 0.05 } },
-    // Colourful, fully-detailed streets (Google-Maps-like), keyless.
     { id: "voyager", type: "raster", source: "voyager", layout: { visibility: "none" }, paint: { "raster-opacity": 1 } },
-    // Real satellite imagery, full colour.
     { id: "esri", type: "raster", source: "esri", layout: { visibility: "none" }, paint: { "raster-opacity": 1 } },
   ],
 };
@@ -65,6 +62,8 @@ interface Props {
   onSelectZone: (zoneId: string) => void;
   industrial?: { lat: number; lon: number }[];
   showIndustry?: boolean;
+  basemap: Basemap;
+  is3D: boolean;
 }
 
 function cellPolygon(lat: number, lon: number, stepKm: number) {
@@ -88,22 +87,63 @@ function gridFC(grid: GridResponse | null): GeoJSON.FeatureCollection {
   };
 }
 
+function addDataLayers(map: maplibregl.Map) {
+  if (!map.getSource("grid")) {
+    map.addSource("grid", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    map.addLayer({
+      id: "grid-2d", type: "fill", source: "grid", layout: { visibility: "none" },
+      paint: { "fill-color": ["get", "color"], "fill-opacity": 0.42, "fill-outline-color": "rgba(255,255,255,0.12)" },
+    });
+    map.addLayer({
+      id: "grid-3d", type: "fill-extrusion", source: "grid",
+      paint: {
+        "fill-extrusion-color": EXTRUSION_COLOR,
+        "fill-extrusion-height": ["get", "height"],
+        "fill-extrusion-base": 0,
+        "fill-extrusion-opacity": 0.82,
+        "fill-extrusion-vertical-gradient": true,
+      },
+    });
+  }
+  if (!map.getSource("industry")) {
+    map.addSource("industry", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    map.addLayer({
+      id: "industry", type: "circle", source: "industry",
+      paint: { "circle-radius": 3.2, "circle-color": "#E67E22", "circle-opacity": 0.9, "circle-stroke-width": 0.5, "circle-stroke-color": "#7c3a0f" },
+    });
+  }
+}
+
 type Hover = { x: number; y: number; name: string; aqi: number; category: string; source: string } | null;
 
 export default function AirMap({
-  city, grid, attributions, selectedZoneId, onSelectZone, industrial, showIndustry,
+  city, grid, attributions, selectedZoneId, onSelectZone, industrial, showIndustry, basemap, is3D,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const selectRef = useRef(onSelectZone);
   selectRef.current = onSelectZone;
+  // refs so the setStyle re-apply (vector basemap switch) always uses the latest data
+  const gridRef = useRef(grid); gridRef.current = grid;
+  const is3DRef = useRef(is3D); is3DRef.current = is3D;
+  const indRef = useRef({ industrial, showIndustry }); indRef.current = { industrial, showIndustry };
+
   const [mode, setMode] = useState<"gl" | "static">(() => (hasWebGL() ? "gl" : "static"));
   const [ready, setReady] = useState(false);
-  const [is3D, setIs3D] = useState(true);
-  const [basemap, setBasemap] = useState<"dark" | "streets" | "sat">("dark");
   const [hover, setHover] = useState<Hover>(null);
   const [tilesBlocked, setTilesBlocked] = useState(false);
+
+  // push current grid / industry / 2D-3D state onto the (re)loaded style
+  const applyData = (map: maplibregl.Map) => {
+    addDataLayers(map);
+    (map.getSource("grid") as maplibregl.GeoJSONSource | undefined)?.setData(gridFC(gridRef.current));
+    if (map.getLayer("grid-3d")) map.setLayoutProperty("grid-3d", "visibility", is3DRef.current ? "visible" : "none");
+    if (map.getLayer("grid-2d")) map.setLayoutProperty("grid-2d", "visibility", is3DRef.current ? "none" : "visible");
+    const { industrial: ind, showIndustry: show } = indRef.current;
+    const feats = (show && ind) ? ind.map((p) => ({ type: "Feature" as const, properties: {}, geometry: { type: "Point" as const, coordinates: [p.lon, p.lat] } })) : [];
+    (map.getSource("industry") as maplibregl.GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: feats });
+  };
 
   // ── init (only in GL mode) ─────────────────────────────────────────
   useEffect(() => {
@@ -114,18 +154,11 @@ export default function AirMap({
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style: STYLE,
+        style: VECTOR ? MAPTILER_STYLE[basemap] : RASTER_STYLE,
         center: [city.center.lon, city.center.lat],
-        zoom: 10,
-        pitch: 50,
-        bearing: -18,
-        maxPitch: 70,
-        attributionControl: false,
+        zoom: 10, pitch: 50, bearing: -18, maxPitch: 70, attributionControl: false,
       });
-    } catch {
-      setMode("static");
-      return;
-    }
+    } catch { setMode("static"); return; }
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
     map.addControl(new maplibregl.AttributionControl({ compact: true }));
@@ -139,45 +172,14 @@ export default function AirMap({
     const onLost = (ev: Event) => { ev.preventDefault(); setMode("static"); };
     canvas.addEventListener("webglcontextlost", onLost, false);
 
-    const onReady = () => {
-      if (!map.getSource("grid")) {
-        map.addSource("grid", { type: "geojson", data: gridFC(null) });
-        map.addLayer({
-          id: "grid-2d", type: "fill", source: "grid", layout: { visibility: "none" },
-          paint: { "fill-color": ["get", "color"], "fill-opacity": 0.42, "fill-outline-color": "rgba(255,255,255,0.12)" },
-        });
-        map.addLayer({
-          id: "grid-3d", type: "fill-extrusion", source: "grid",
-          paint: {
-            "fill-extrusion-color": EXTRUSION_COLOR,
-            "fill-extrusion-height": ["get", "height"],
-            "fill-extrusion-base": 0,
-            "fill-extrusion-opacity": 0.85,
-            "fill-extrusion-vertical-gradient": true,
-          },
-        });
-      }
-      if (!map.getSource("industry")) {
-        map.addSource("industry", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-        map.addLayer({
-          id: "industry", type: "circle", source: "industry",
-          paint: { "circle-radius": 3.2, "circle-color": "#E67E22", "circle-opacity": 0.9, "circle-stroke-width": 0.5, "circle-stroke-color": "#7c3a0f" },
-        });
-      }
-      map.resize();
-      map.triggerRepaint();
-      setReady(true);
-    };
+    const onReady = () => { applyData(map); map.resize(); map.triggerRepaint(); setReady(true); };
     map.on("load", onReady);
     map.once("idle", onReady);
     map.on("movestart", () => setHover(null));
 
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(containerRef.current);
-
-    // Safety: re-assert size + repaint after any late layout shift (page transition / rail).
-    const kicks = [60, 250, 700].map((d) =>
-      setTimeout(() => { const m = mapRef.current; if (m) { m.resize(); m.triggerRepaint(); } }, d));
+    const kicks = [60, 250, 700].map((d) => setTimeout(() => { const m = mapRef.current; if (m) { m.resize(); m.triggerRepaint(); } }, d));
 
     return () => {
       kicks.forEach(clearTimeout);
@@ -209,23 +211,28 @@ export default function AirMap({
     (map.getSource("industry") as maplibregl.GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: feats });
   }, [ready, industrial, showIndustry]);
 
-  // ── basemap toggle ──────────────────────────────────────────────────
+  // ── basemap change — setStyle for vector, layer visibility for raster ──
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
-    map.setLayoutProperty("carto", "visibility", basemap === "dark" ? "visible" : "none");
-    map.setLayoutProperty("voyager", "visibility", basemap === "streets" ? "visible" : "none");
-    map.setLayoutProperty("esri", "visibility", basemap === "sat" ? "visible" : "none");
-    // let the detailed basemap show through a bit more on streets/satellite
-    map.setPaintProperty("grid-3d", "fill-extrusion-opacity", basemap === "dark" ? 0.85 : 0.7);
+    if (VECTOR) {
+      map.setStyle(MAPTILER_STYLE[basemap]);
+      map.once("style.load", () => { applyData(map); map.triggerRepaint(); });
+    } else {
+      map.setLayoutProperty("carto", "visibility", basemap === "dark" ? "visible" : "none");
+      map.setLayoutProperty("voyager", "visibility", basemap === "streets" ? "visible" : "none");
+      map.setLayoutProperty("esri", "visibility", basemap === "sat" ? "visible" : "none");
+      if (map.getLayer("grid-3d")) map.setPaintProperty("grid-3d", "fill-extrusion-opacity", basemap === "dark" ? 0.82 : 0.68);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, basemap]);
 
   // ── 2D / 3D toggle ──────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
-    map.setLayoutProperty("grid-3d", "visibility", is3D ? "visible" : "none");
-    map.setLayoutProperty("grid-2d", "visibility", is3D ? "none" : "visible");
+    if (map.getLayer("grid-3d")) map.setLayoutProperty("grid-3d", "visibility", is3D ? "visible" : "none");
+    if (map.getLayer("grid-2d")) map.setLayoutProperty("grid-2d", "visibility", is3D ? "none" : "visible");
     map.easeTo({ pitch: is3D ? 50 : 0, bearing: is3D ? -18 : 0, duration: 600 });
   }, [ready, is3D]);
 
@@ -253,7 +260,7 @@ export default function AirMap({
         `font:600 12px var(--font-mono),ui-monospace,monospace;font-variant-numeric:tabular-nums;` +
         `border:2px solid ${selected ? "#F4F5F6" : "rgba(8,9,10,.72)"};` +
         `box-shadow:0 1px 3px rgba(0,0,0,.5),0 0 0 1px rgba(0,0,0,.35)${selected ? ",0 0 0 4px rgba(244,245,246,.22)" : ""};` +
-        `cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;z-index:${selected ? 3 : 1};`;
+        `cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;`;
       if (aqi >= 401) el.classList.add("vn-pulse");
       el.onmouseenter = () => {
         el.style.transform = "scale(1.18)";
@@ -261,8 +268,6 @@ export default function AirMap({
         const W = containerRef.current?.clientWidth ?? 0;
         const H = containerRef.current?.clientHeight ?? 0;
         const tipW = 200;
-        // flip the readout to the LEFT of the marker on the right half of the map so it
-        // can never run toward / under the side panel; then clamp hard inside the map box.
         let x = pt.x > W * 0.5 ? pt.x - tipW - 12 : pt.x + 14;
         x = Math.max(8, Math.min(x, W - tipW - 8));
         const y = Math.max(8, Math.min(pt.y - 10, H - 104));
@@ -281,7 +286,7 @@ export default function AirMap({
     if (!ready || !map) return;
     const b = city.bbox;
     map.fitBounds([[b.min_lon, b.min_lat], [b.max_lon, b.max_lat]], { padding: { top: 56, right: 64, bottom: 64, left: 56 }, maxZoom: 12, duration: 700 });
-    const t = setTimeout(() => map.easeTo({ pitch: is3D ? 50 : 0, bearing: is3D ? -18 : 0, duration: 450 }), 720);
+    const t = setTimeout(() => map.easeTo({ pitch: is3DRef.current ? 50 : 0, bearing: is3DRef.current ? -18 : 0, duration: 450 }), 720);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, city]);
@@ -290,11 +295,8 @@ export default function AirMap({
   if (mode === "static") {
     return (
       <StaticMap
-        city={city}
-        grid={grid}
-        attributions={attributions}
-        selectedZoneId={selectedZoneId}
-        onSelectZone={onSelectZone}
+        city={city} grid={grid} attributions={attributions}
+        selectedZoneId={selectedZoneId} onSelectZone={onSelectZone}
         onTryGL={hasWebGL() ? () => setMode("gl") : undefined}
       />
     );
@@ -302,9 +304,6 @@ export default function AirMap({
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      {/* explicit h-full/w-full (NOT absolute inset-0): maplibre-gl.css forces
-          .maplibregl-map{position:relative}, which cancels `absolute` and collapses
-          the container to 0 height → black map. Sizing via h-full is immune to that. */}
       <div ref={containerRef} className="h-full w-full" />
 
       {tilesBlocked && (
@@ -313,8 +312,9 @@ export default function AirMap({
         </div>
       )}
 
+      {/* hover readout — z-50 so it always sits above any control; flips + clamps inside the map */}
       {hover && (
-        <div className="glass pointer-events-none absolute z-20 w-[186px] px-3 py-2" style={{ left: hover.x, top: hover.y }}>
+        <div className="glass pointer-events-none absolute z-50 w-[186px] px-3 py-2" style={{ left: hover.x, top: hover.y }}>
           <div className="truncate text-[13px] font-semibold text-text-hi">{hover.name}</div>
           <div className="mt-1 flex items-center gap-2">
             <span className="rounded-md px-1.5 py-0.5 font-mono text-sm font-bold tabular-nums"
@@ -327,30 +327,7 @@ export default function AirMap({
         </div>
       )}
 
-      <div className="absolute bottom-3 right-3 z-20 flex flex-col items-end gap-2">
-        <div className="glass flex items-center gap-0.5 p-1">
-          {(["dark", "streets", "sat"] as const).map((bm) => (
-            <button key={bm} onClick={() => setBasemap(bm)}
-              className={`rounded-md px-2 py-1 text-[11px] font-medium capitalize transition-colors duration-fast ${basemap === bm ? "bg-white/[0.1] text-text-hi" : "text-text-mid hover:text-text-hi"}`}>
-              {bm === "sat" ? "Satellite" : bm}
-            </button>
-          ))}
-        </div>
-        <div className="glass flex items-center gap-0.5 p-1">
-          {([true, false] as const).map((v) => (
-            <button key={String(v)} onClick={() => setIs3D(v)}
-              className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-fast ${is3D === v ? "bg-white/[0.1] text-text-hi" : "text-text-mid hover:text-text-hi"}`}>
-              {v ? "3D" : "2D"}
-            </button>
-          ))}
-          <button onClick={() => setMode("static")}
-            title="Switch to the no-GPU schematic map"
-            className="rounded-md px-2 py-1 text-[11px] font-medium text-text-mid transition-colors duration-fast hover:text-text-hi">
-            Flat
-          </button>
-        </div>
-      </div>
-
+      {/* legend — bottom-left, small, pointer-events-none so it never blocks the map */}
       <div className="glass pointer-events-none absolute bottom-3 left-3 z-20 px-3 py-2">
         <div className="eyebrow mb-1">AQI · CPCB</div>
         <div className="flex overflow-hidden rounded">

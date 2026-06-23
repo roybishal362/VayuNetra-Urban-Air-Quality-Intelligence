@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { api } from "@/lib/api";
 import { useCity } from "@/lib/cityStore";
 import type { GridResponse } from "@/lib/types";
+import type { Basemap } from "@/components/AirMap";
 import BottomStrip from "@/components/BottomStrip";
 import TimeControl from "@/components/TimeControl";
 import type { TimeValue } from "@/components/TimeControl";
@@ -32,6 +33,8 @@ export default function CommandCenter() {
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
   const [showIndustry, setShowIndustry] = useState(false);
+  const [basemap, setBasemap] = useState<Basemap>("dark");
+  const [is3D, setIs3D] = useState(true);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setSelectedZoneId(null); setTime({ layer: "current", horizon: 0 }); }, [cityId]);
@@ -65,6 +68,33 @@ export default function CommandCenter() {
   return (
     <div className="flex h-full">
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* map toolbar — all map controls live here, never floating over the markers */}
+        <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-white/[0.06] bg-vn-900/50 px-3 py-2 backdrop-blur">
+          <TimeControl value={time} onChange={setTime} />
+          {time.layer === "forecast" && (
+            <span className="rounded-md border border-white/[0.08] bg-vn-800/60 px-2.5 py-1 font-mono text-[11px] text-text">Predicted · +{time.horizon}h</span>
+          )}
+          <div className="ml-auto flex items-center gap-2">
+            <div className="flex items-center gap-0.5 rounded-lg border border-white/[0.06] bg-vn-850/60 p-1">
+              {(["dark", "streets", "sat"] as Basemap[]).map((bm) => (
+                <button key={bm} onClick={() => setBasemap(bm)}
+                  className={clsx("rounded-md px-2.5 py-1 text-[11px] font-medium capitalize transition-colors duration-fast",
+                    basemap === bm ? "bg-white/[0.1] text-text-hi" : "text-text-mid hover:text-text-hi")}>
+                  {bm === "sat" ? "Satellite" : bm}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-0.5 rounded-lg border border-white/[0.06] bg-vn-850/60 p-1">
+              {([true, false] as const).map((v) => (
+                <button key={String(v)} onClick={() => setIs3D(v)}
+                  className={clsx("rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors duration-fast",
+                    is3D === v ? "bg-white/[0.1] text-text-hi" : "text-text-mid hover:text-text-hi")}>
+                  {v ? "3D" : "2D"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
         <div className="relative min-h-0 flex-1">
           <AirMap
             city={city}
@@ -74,13 +104,9 @@ export default function CommandCenter() {
             onSelectZone={onSelectZone}
             industrial={intel?.landuse?.industrial}
             showIndustry={showIndustry}
+            basemap={basemap}
+            is3D={is3D}
           />
-          <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-2">
-            <TimeControl value={time} onChange={setTime} />
-            {time.layer === "forecast" && (
-              <div className="glass px-3 py-1.5 font-mono text-xs text-text">Predicted AQI · +{time.horizon}h</div>
-            )}
-          </div>
           {loading && (
             <div className="absolute inset-0 z-20 grid place-items-center bg-vn-base/40 backdrop-blur-sm">
               <div className="glass px-4 py-3 text-sm text-text">Building intelligence…</div>
