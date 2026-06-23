@@ -21,6 +21,16 @@ const STYLE: StyleSpecification = {
       tileSize: 256,
       attribution: "© OpenStreetMap, © CARTO",
     },
+    voyager: {
+      type: "raster",
+      tiles: [
+        "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+        "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+        "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+      ],
+      tileSize: 256,
+      attribution: "© OpenStreetMap, © CARTO",
+    },
     esri: {
       type: "raster",
       tiles: [
@@ -32,8 +42,12 @@ const STYLE: StyleSpecification = {
   },
   layers: [
     { id: "bg", type: "background", paint: { "background-color": "#08090A" } },
-    { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 0.6, "raster-saturation": -0.9, "raster-contrast": 0.1 } },
-    { id: "esri", type: "raster", source: "esri", layout: { visibility: "none" }, paint: { "raster-opacity": 0.9, "raster-saturation": -0.6, "raster-brightness-max": 0.85 } },
+    // Detailed dark street map — fully visible (only lightly desaturated to keep the theme).
+    { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 1, "raster-saturation": -0.2, "raster-contrast": 0.05 } },
+    // Colourful, fully-detailed streets (Google-Maps-like), keyless.
+    { id: "voyager", type: "raster", source: "voyager", layout: { visibility: "none" }, paint: { "raster-opacity": 1 } },
+    // Real satellite imagery, full colour.
+    { id: "esri", type: "raster", source: "esri", layout: { visibility: "none" }, paint: { "raster-opacity": 1 } },
   ],
 };
 
@@ -87,7 +101,7 @@ export default function AirMap({
   const [mode, setMode] = useState<"gl" | "static">(() => (hasWebGL() ? "gl" : "static"));
   const [ready, setReady] = useState(false);
   const [is3D, setIs3D] = useState(true);
-  const [basemap, setBasemap] = useState<"dark" | "sat">("dark");
+  const [basemap, setBasemap] = useState<"dark" | "streets" | "sat">("dark");
   const [hover, setHover] = useState<Hover>(null);
   const [tilesBlocked, setTilesBlocked] = useState(false);
 
@@ -130,7 +144,7 @@ export default function AirMap({
         map.addSource("grid", { type: "geojson", data: gridFC(null) });
         map.addLayer({
           id: "grid-2d", type: "fill", source: "grid", layout: { visibility: "none" },
-          paint: { "fill-color": ["get", "color"], "fill-opacity": 0.5, "fill-outline-color": "rgba(255,255,255,0.1)" },
+          paint: { "fill-color": ["get", "color"], "fill-opacity": 0.42, "fill-outline-color": "rgba(255,255,255,0.12)" },
         });
         map.addLayer({
           id: "grid-3d", type: "fill-extrusion", source: "grid",
@@ -200,8 +214,10 @@ export default function AirMap({
     const map = mapRef.current;
     if (!ready || !map) return;
     map.setLayoutProperty("carto", "visibility", basemap === "dark" ? "visible" : "none");
+    map.setLayoutProperty("voyager", "visibility", basemap === "streets" ? "visible" : "none");
     map.setLayoutProperty("esri", "visibility", basemap === "sat" ? "visible" : "none");
-    map.setPaintProperty("grid-3d", "fill-extrusion-opacity", basemap === "sat" ? 0.72 : 0.85);
+    // let the detailed basemap show through a bit more on streets/satellite
+    map.setPaintProperty("grid-3d", "fill-extrusion-opacity", basemap === "dark" ? 0.85 : 0.7);
   }, [ready, basemap]);
 
   // ── 2D / 3D toggle ──────────────────────────────────────────────────
@@ -244,8 +260,13 @@ export default function AirMap({
         const pt = map.project([z.center.lon, z.center.lat]);
         const W = containerRef.current?.clientWidth ?? 0;
         const H = containerRef.current?.clientHeight ?? 0;
-        setHover({ x: Math.max(10, Math.min(pt.x + 16, W - 196)), y: Math.max(10, Math.min(pt.y - 10, H - 96)),
-          name: z.name, aqi, category: a?.category ?? "—", source: a?.contributions?.[0]?.label ?? "" });
+        const tipW = 200;
+        // flip the readout to the LEFT of the marker on the right half of the map so it
+        // can never run toward / under the side panel; then clamp hard inside the map box.
+        let x = pt.x > W * 0.5 ? pt.x - tipW - 12 : pt.x + 14;
+        x = Math.max(8, Math.min(x, W - tipW - 8));
+        const y = Math.max(8, Math.min(pt.y - 10, H - 104));
+        setHover({ x, y, name: z.name, aqi, category: a?.category ?? "—", source: a?.contributions?.[0]?.label ?? "" });
       };
       el.onmouseleave = () => { el.style.transform = "scale(1)"; setHover(null); };
       el.onclick = (e) => { e.stopPropagation(); setHover(null); selectRef.current(z.id); };
@@ -308,10 +329,10 @@ export default function AirMap({
 
       <div className="absolute bottom-3 right-3 z-20 flex flex-col items-end gap-2">
         <div className="glass flex items-center gap-0.5 p-1">
-          {(["dark", "sat"] as const).map((bm) => (
+          {(["dark", "streets", "sat"] as const).map((bm) => (
             <button key={bm} onClick={() => setBasemap(bm)}
-              className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-fast ${basemap === bm ? "bg-white/[0.1] text-text-hi" : "text-text-mid hover:text-text-hi"}`}>
-              {bm === "dark" ? "Dark" : "Satellite"}
+              className={`rounded-md px-2 py-1 text-[11px] font-medium capitalize transition-colors duration-fast ${basemap === bm ? "bg-white/[0.1] text-text-hi" : "text-text-mid hover:text-text-hi"}`}>
+              {bm === "sat" ? "Satellite" : bm}
             </button>
           ))}
         </div>

@@ -22,7 +22,7 @@ const STYLE: StyleSpecification = {
   },
   layers: [
     { id: "bg", type: "background", paint: { "background-color": "#08090A" } },
-    { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 0.5, "raster-saturation": -0.95, "raster-contrast": 0.1 } },
+    { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 0.8, "raster-saturation": -0.4, "raster-contrast": 0.05 } },
   ],
 };
 
