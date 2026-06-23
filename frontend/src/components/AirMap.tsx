@@ -43,31 +43,6 @@ const EXTRUSION_COLOR: ExpressionSpecification = [
   200, "#F8C238", 250, "#F29C33", 300, "#ED6B30", 400, "#E93F33", 500, "#AF2D24",
 ];
 
-// Read a handful of pixels from the rendered GL canvas; if nothing but the dark
-// background is present where the AQI field should be, the GPU isn't drawing — fall back.
-function probeBlank(map: maplibregl.Map): boolean {
-  try {
-    const canvas = map.getCanvas();
-    const gl = (canvas.getContext("webgl2") || canvas.getContext("webgl")) as WebGLRenderingContext | null;
-    if (!gl) return true;
-    const w = canvas.width | 0, h = canvas.height | 0;
-    if (!w || !h) return true;
-    const buf = new Uint8Array(4);
-    let bright = 0;
-    for (let ix = 1; ix <= 5; ix++) {
-      for (let iy = 1; iy <= 4; iy++) {
-        const x = Math.floor((ix / 6) * w);
-        const y = Math.floor((iy / 6) * h);
-        gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf);
-        if (buf[0] > 60 || buf[1] > 60 || buf[2] > 60) bright++;
-      }
-    }
-    return bright === 0; // nothing brighter than the dark canvas → blank render
-  } catch {
-    return false; // probe failed → assume the map is fine, don't false-fallback
-  }
-}
-
 interface Props {
   city: City;
   grid: GridResponse | null;
@@ -107,7 +82,6 @@ export default function AirMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
-  const probedRef = useRef(false);
   const selectRef = useRef(onSelectZone);
   selectRef.current = onSelectZone;
   const [mode, setMode] = useState<"gl" | "static">(() => (hasWebGL() ? "gl" : "static"));
@@ -133,7 +107,6 @@ export default function AirMap({
         bearing: -18,
         maxPitch: 70,
         attributionControl: false,
-        preserveDrawingBuffer: true, // lets us probe whether anything actually rendered
       });
     } catch {
       setMode("static");
@@ -178,6 +151,7 @@ export default function AirMap({
         });
       }
       map.resize();
+      map.triggerRepaint();
       setReady(true);
     };
     map.on("load", onReady);
@@ -187,7 +161,12 @@ export default function AirMap({
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(containerRef.current);
 
+    // Safety: re-assert size + repaint after any late layout shift (page transition / rail).
+    const kicks = [60, 250, 700].map((d) =>
+      setTimeout(() => { const m = mapRef.current; if (m) { m.resize(); m.triggerRepaint(); } }, d));
+
     return () => {
+      kicks.forEach(clearTimeout);
       ro.disconnect();
       canvas.removeEventListener("webglcontextlost", onLost);
       markersRef.current.forEach((m) => m.remove());
@@ -198,18 +177,6 @@ export default function AirMap({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
-
-  // ── blank-render probe → auto fall back to the SVG map ─────────────
-  useEffect(() => {
-    const map = mapRef.current;
-    if (mode !== "gl" || !ready || !map || probedRef.current) return;
-    if (!grid || !grid.cells.length) return;
-    const t = setTimeout(() => {
-      probedRef.current = true;
-      if (probeBlank(map)) setMode("static");
-    }, 1900);
-    return () => clearTimeout(t);
-  }, [mode, ready, grid]);
 
   // ── grid data ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -307,14 +274,17 @@ export default function AirMap({
         attributions={attributions}
         selectedZoneId={selectedZoneId}
         onSelectZone={onSelectZone}
-        onTryGL={hasWebGL() ? () => { probedRef.current = true; setMode("gl"); } : undefined}
+        onTryGL={hasWebGL() ? () => setMode("gl") : undefined}
       />
     );
   }
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <div ref={containerRef} className="absolute inset-0" />
+      {/* explicit h-full/w-full (NOT absolute inset-0): maplibre-gl.css forces
+          .maplibregl-map{position:relative}, which cancels `absolute` and collapses
+          the container to 0 height → black map. Sizing via h-full is immune to that. */}
+      <div ref={containerRef} className="h-full w-full" />
 
       {tilesBlocked && (
         <div className="glass pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 px-2.5 py-1 font-mono text-[11px] text-text-mid">
@@ -352,7 +322,7 @@ export default function AirMap({
               {v ? "3D" : "2D"}
             </button>
           ))}
-          <button onClick={() => { probedRef.current = true; setMode("static"); }}
+          <button onClick={() => setMode("static")}
             title="Switch to the no-GPU schematic map"
             className="rounded-md px-2 py-1 text-[11px] font-medium text-text-mid transition-colors duration-fast hover:text-text-hi">
             Flat
