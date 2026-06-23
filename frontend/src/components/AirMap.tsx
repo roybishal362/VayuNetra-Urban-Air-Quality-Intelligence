@@ -10,39 +10,27 @@ import StaticMap from "./StaticMap";
 
 export type Basemap = "dark" | "streets" | "sat";
 
-// Premium vector basemaps via MapTiler (set NEXT_PUBLIC_MAPTILER_KEY). Falls back to
-// detailed keyless raster tiles when no key is present, so the map always works.
-const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
+// MapTiler vector basemaps (3D-capable). Key can be overridden via env; otherwise the
+// project key is used so the premium maps work out of the box.
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "nc5sshnRlIfoqUGKBQkq";
 const VECTOR = !!MAPTILER_KEY;
 const MAPTILER_STYLE: Record<Basemap, string> = {
   dark: `https://api.maptiler.com/maps/darkmatter/style.json?key=${MAPTILER_KEY}`,
-  streets: `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`,
+  streets: `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${MAPTILER_KEY}`,
   sat: `https://api.maptiler.com/maps/hybrid/style.json?key=${MAPTILER_KEY}`,
 };
 
-// Keyless raster fallback — all three detailed + fully visible (un-muted).
+// Keyless raster fallback (only used if the key is ever removed).
 const RASTER_STYLE: StyleSpecification = {
   version: 8,
   sources: {
-    carto: {
-      type: "raster",
-      tiles: ["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
-      tileSize: 256, attribution: "© OpenStreetMap, © CARTO",
-    },
-    voyager: {
-      type: "raster",
-      tiles: ["https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"],
-      tileSize: 256, attribution: "© OpenStreetMap, © CARTO",
-    },
-    esri: {
-      type: "raster",
-      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-      tileSize: 256, attribution: "© Esri, Maxar, Earthstar Geographics",
-    },
+    carto: { type: "raster", tiles: ["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap, © CARTO" },
+    voyager: { type: "raster", tiles: ["https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap, © CARTO" },
+    esri: { type: "raster", tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"], tileSize: 256, attribution: "© Esri" },
   },
   layers: [
     { id: "bg", type: "background", paint: { "background-color": "#08090A" } },
-    { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 1, "raster-saturation": -0.2, "raster-contrast": 0.05 } },
+    { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 1, "raster-saturation": -0.2 } },
     { id: "voyager", type: "raster", source: "voyager", layout: { visibility: "none" }, paint: { "raster-opacity": 1 } },
     { id: "esri", type: "raster", source: "esri", layout: { visibility: "none" }, paint: { "raster-opacity": 1 } },
   ],
@@ -87,6 +75,31 @@ function gridFC(grid: GridResponse | null): GeoJSON.FeatureCollection {
   };
 }
 
+// Real 3D buildings from the MapTiler vector source (the "3D city" look). Fully guarded:
+// if the style has no building vector layer it simply renders nothing.
+function addBuildings(map: maplibregl.Map) {
+  if (!VECTOR || map.getLayer("vn-buildings")) return;
+  try {
+    const sources = map.getStyle()?.sources ?? {};
+    const vectorSrc = Object.keys(sources).find((id) => (sources as Record<string, { type?: string }>)[id]?.type === "vector");
+    if (!vectorSrc) return;
+    const beforeId = map.getLayer("grid-3d") ? "grid-3d" : undefined;
+    map.addLayer({
+      id: "vn-buildings",
+      type: "fill-extrusion",
+      source: vectorSrc,
+      "source-layer": "building",
+      minzoom: 13,
+      paint: {
+        "fill-extrusion-color": "#303137",
+        "fill-extrusion-height": ["coalesce", ["get", "render_height"], ["get", "height"], 8],
+        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], ["get", "min_height"], 0],
+        "fill-extrusion-opacity": 0.85,
+      },
+    }, beforeId);
+  } catch { /* style has no building layer — fine */ }
+}
+
 function addDataLayers(map: maplibregl.Map) {
   if (!map.getSource("grid")) {
     map.addSource("grid", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
@@ -100,7 +113,8 @@ function addDataLayers(map: maplibregl.Map) {
         "fill-extrusion-color": EXTRUSION_COLOR,
         "fill-extrusion-height": ["get", "height"],
         "fill-extrusion-base": 0,
-        "fill-extrusion-opacity": 0.82,
+        // translucent so the Dark Matter basemap + 3D buildings glow through (the AQI is a glow, not a wall)
+        "fill-extrusion-opacity": 0.55,
         "fill-extrusion-vertical-gradient": true,
       },
     });
@@ -112,9 +126,8 @@ function addDataLayers(map: maplibregl.Map) {
       paint: { "circle-radius": 3.2, "circle-color": "#E67E22", "circle-opacity": 0.9, "circle-stroke-width": 0.5, "circle-stroke-color": "#7c3a0f" },
     });
   }
+  addBuildings(map);
 }
-
-type Hover = { x: number; y: number; name: string; aqi: number; category: string; source: string } | null;
 
 export default function AirMap({
   city, grid, attributions, selectedZoneId, onSelectZone, industrial, showIndustry, basemap, is3D,
@@ -124,17 +137,14 @@ export default function AirMap({
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const selectRef = useRef(onSelectZone);
   selectRef.current = onSelectZone;
-  // refs so the setStyle re-apply (vector basemap switch) always uses the latest data
   const gridRef = useRef(grid); gridRef.current = grid;
   const is3DRef = useRef(is3D); is3DRef.current = is3D;
   const indRef = useRef({ industrial, showIndustry }); indRef.current = { industrial, showIndustry };
 
   const [mode, setMode] = useState<"gl" | "static">(() => (hasWebGL() ? "gl" : "static"));
   const [ready, setReady] = useState(false);
-  const [hover, setHover] = useState<Hover>(null);
   const [tilesBlocked, setTilesBlocked] = useState(false);
 
-  // push current grid / industry / 2D-3D state onto the (re)loaded style
   const applyData = (map: maplibregl.Map) => {
     addDataLayers(map);
     (map.getSource("grid") as maplibregl.GeoJSONSource | undefined)?.setData(gridFC(gridRef.current));
@@ -145,7 +155,7 @@ export default function AirMap({
     (map.getSource("industry") as maplibregl.GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: feats });
   };
 
-  // ── init (only in GL mode) ─────────────────────────────────────────
+  // ── init ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (mode !== "gl" || !containerRef.current || mapRef.current) return;
     if (!hasWebGL()) { setMode("static"); return; }
@@ -175,7 +185,6 @@ export default function AirMap({
     const onReady = () => { applyData(map); map.resize(); map.triggerRepaint(); setReady(true); };
     map.on("load", onReady);
     map.once("idle", onReady);
-    map.on("movestart", () => setHover(null));
 
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(containerRef.current);
@@ -211,7 +220,7 @@ export default function AirMap({
     (map.getSource("industry") as maplibregl.GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: feats });
   }, [ready, industrial, showIndustry]);
 
-  // ── basemap change — setStyle for vector, layer visibility for raster ──
+  // ── basemap change ──────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
@@ -222,7 +231,6 @@ export default function AirMap({
       map.setLayoutProperty("carto", "visibility", basemap === "dark" ? "visible" : "none");
       map.setLayoutProperty("voyager", "visibility", basemap === "streets" ? "visible" : "none");
       map.setLayoutProperty("esri", "visibility", basemap === "sat" ? "visible" : "none");
-      if (map.getLayer("grid-3d")) map.setPaintProperty("grid-3d", "fill-extrusion-opacity", basemap === "dark" ? 0.82 : 0.68);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, basemap]);
@@ -233,10 +241,11 @@ export default function AirMap({
     if (!ready || !map) return;
     if (map.getLayer("grid-3d")) map.setLayoutProperty("grid-3d", "visibility", is3D ? "visible" : "none");
     if (map.getLayer("grid-2d")) map.setLayoutProperty("grid-2d", "visibility", is3D ? "none" : "visible");
+    if (map.getLayer("vn-buildings")) map.setLayoutProperty("vn-buildings", "visibility", is3D ? "visible" : "none");
     map.easeTo({ pitch: is3D ? 50 : 0, bearing: is3D ? -18 : 0, duration: 600 });
   }, [ready, is3D]);
 
-  // ── markers ─────────────────────────────────────────────────────────
+  // ── zone markers (hover = scale only; click = select → side panel) ──
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
@@ -253,6 +262,7 @@ export default function AirMap({
       el.className = "vn-marker";
       el.setAttribute("aria-label", `${z.name}: AQI ${aqi || "n/a"}`);
       el.setAttribute("aria-pressed", String(selected));
+      el.title = `${z.name} · AQI ${aqi || "n/a"}${a?.category ? " · " + a.category : ""}`;
       el.textContent = aqi ? String(aqi) : "–";
       el.style.cssText =
         `appearance:none;padding:0;display:grid;place-items:center;width:30px;height:30px;border-radius:9999px;` +
@@ -262,19 +272,9 @@ export default function AirMap({
         `box-shadow:0 1px 3px rgba(0,0,0,.5),0 0 0 1px rgba(0,0,0,.35)${selected ? ",0 0 0 4px rgba(244,245,246,.22)" : ""};` +
         `cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;`;
       if (aqi >= 401) el.classList.add("vn-pulse");
-      el.onmouseenter = () => {
-        el.style.transform = "scale(1.18)";
-        const pt = map.project([z.center.lon, z.center.lat]);
-        const W = containerRef.current?.clientWidth ?? 0;
-        const H = containerRef.current?.clientHeight ?? 0;
-        const tipW = 200;
-        let x = pt.x > W * 0.5 ? pt.x - tipW - 12 : pt.x + 14;
-        x = Math.max(8, Math.min(x, W - tipW - 8));
-        const y = Math.max(8, Math.min(pt.y - 10, H - 104));
-        setHover({ x, y, name: z.name, aqi, category: a?.category ?? "—", source: a?.contributions?.[0]?.label ?? "" });
-      };
-      el.onmouseleave = () => { el.style.transform = "scale(1)"; setHover(null); };
-      el.onclick = (e) => { e.stopPropagation(); setHover(null); selectRef.current(z.id); };
+      el.onmouseenter = () => { el.style.transform = "scale(1.18)"; };
+      el.onmouseleave = () => { el.style.transform = "scale(1)"; };
+      el.onclick = (e) => { e.stopPropagation(); selectRef.current(z.id); };
       const marker = new maplibregl.Marker({ element: el }).setLngLat([z.center.lon, z.center.lat]).addTo(map);
       markersRef.current.push(marker);
     }
@@ -312,22 +312,7 @@ export default function AirMap({
         </div>
       )}
 
-      {/* hover readout — z-50 so it always sits above any control; flips + clamps inside the map */}
-      {hover && (
-        <div className="glass pointer-events-none absolute z-50 w-[186px] px-3 py-2" style={{ left: hover.x, top: hover.y }}>
-          <div className="truncate text-[13px] font-semibold text-text-hi">{hover.name}</div>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="rounded-md px-1.5 py-0.5 font-mono text-sm font-bold tabular-nums"
-                  style={{ background: aqiColor(hover.aqi), color: textOn(aqiColor(hover.aqi)) }}>
-              {hover.aqi || "—"}
-            </span>
-            <span className="text-[11px] text-text-mid">{hover.category}</span>
-          </div>
-          {hover.source && <div className="mt-1 truncate text-[11px] text-text-low">{hover.source}</div>}
-        </div>
-      )}
-
-      {/* legend — bottom-left, small, pointer-events-none so it never blocks the map */}
+      {/* legend — small, bottom-left, click-through */}
       <div className="glass pointer-events-none absolute bottom-3 left-3 z-20 px-3 py-2">
         <div className="eyebrow mb-1">AQI · CPCB</div>
         <div className="flex overflow-hidden rounded">

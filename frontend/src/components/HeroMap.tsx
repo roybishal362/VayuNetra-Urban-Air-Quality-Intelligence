@@ -6,6 +6,9 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { GridCell, LatLon } from "@/lib/types";
 import { hasWebGL } from "@/lib/webgl";
 
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "nc5sshnRlIfoqUGKBQkq";
+const HERO_STYLE = MAPTILER_KEY ? `https://api.maptiler.com/maps/darkmatter/style.json?key=${MAPTILER_KEY}` : null;
+
 const STYLE: StyleSpecification = {
   version: 8,
   sources: {
@@ -94,7 +97,7 @@ export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; 
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style: STYLE,
+        style: HERO_STYLE ?? STYLE,
         center: [center.lon, center.lat],
         zoom: 9.7,
         pitch: 56,
