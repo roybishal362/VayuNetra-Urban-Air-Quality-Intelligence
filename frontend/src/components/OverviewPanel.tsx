@@ -5,7 +5,7 @@ import clsx from "clsx";
 import { api } from "@/lib/api";
 import type { CityComparison, CityIntelligence } from "@/lib/types";
 import { aqiColor } from "@/lib/aqi";
-import { compact } from "@/lib/format";
+import { compact, skillLabel } from "@/lib/format";
 
 const ALERT_COLOR: Record<string, string> = { severe: "#E93F33", warning: "#F29C33", watch: "#FFF833" };
 
@@ -27,12 +27,13 @@ export default function OverviewPanel({
   activeCityId: string;
 }) {
   const [brief, setBrief] = useState<{ generated_by: string; briefing: string } | null>(null);
+  const [briefErr, setBriefErr] = useState(false);
   const [compare, setCompare] = useState<CityComparison[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setBrief(null);
-    api.briefing(intel.city_id).then((b) => !cancelled && setBrief(b)).catch(() => {});
+    setBrief(null); setBriefErr(false);
+    api.briefing(intel.city_id).then((b) => !cancelled && setBrief(b)).catch(() => !cancelled && setBriefErr(true));
     return () => { cancelled = true; };
   }, [intel.city_id]);
 
@@ -66,7 +67,7 @@ export default function OverviewPanel({
                 <div className="h-full rounded" style={{ width: `${(c.avg_aqi / maxAqi) * 100}%`, background: aqiColor(c.avg_aqi) }} />
               </div>
               <span className="w-8 text-right font-mono text-xs" style={{ color: aqiColor(c.avg_aqi) }}>{c.avg_aqi}</span>
-              <span className="w-10 text-right font-mono text-[11px] text-text-mid">+{c.improvement_pct.toFixed(0)}%</span>
+              <span className="w-12 text-right font-mono text-[11px] text-text-mid">{skillLabel(c.improvement_pct)}</span>
             </button>
           ))}
           {!compare && <div className="px-2 text-xs text-slate-500">Loading national snapshot…</div>}
@@ -82,8 +83,8 @@ export default function OverviewPanel({
             </span>
           )}
         </div>
-        <p className="text-sm leading-relaxed text-slate-200">
-          {brief ? brief.briefing : "Generating briefing…"}
+        <p className="text-sm leading-relaxed text-text">
+          {brief ? brief.briefing : briefErr ? "Briefing unavailable right now — showing metrics only." : "Generating briefing…"}
         </p>
       </div>
 

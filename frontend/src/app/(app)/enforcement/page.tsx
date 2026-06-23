@@ -3,11 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useCity } from "@/lib/cityStore";
 import EnforcementPanel from "@/components/EnforcementPanel";
+import StateMsg from "@/components/StateMsg";
 
 export default function EnforcementPage() {
-  const { city, intel } = useCity();
+  const { city, intel, error } = useCity();
   const router = useRouter();
-  if (!city || !intel) return <div className="grid h-full place-items-center text-slate-400">Loading enforcement…</div>;
+  if (error && !intel) return <StateMsg kind="error" title="Couldn’t load enforcement data" detail={error} />;
+  if (!city || !intel) return <StateMsg title="Loading enforcement…" />;
   const top = intel.enforcement[0];
 
   return (

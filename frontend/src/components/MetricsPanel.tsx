@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import type { CityIntelligence } from "@/lib/types";
 import { featureLabel } from "@/lib/sources";
+import { skillLabel } from "@/lib/format";
 
 const TIP = {
   background: "rgba(11,12,14,0.92)",
@@ -36,7 +37,7 @@ export default function MetricsPanel({ intel }: { intel: CityIntelligence }) {
           <div className="eyebrow">Forecast skill</div>
           {head && (
             <div className="text-right">
-              <span className="font-mono text-2xl font-bold tabular-nums text-text-hi">+{head.improvement_pct.toFixed(0)}%</span>
+              <span className="font-mono text-2xl font-bold tabular-nums text-text-hi">{skillLabel(head.improvement_pct)}</span>
               <span className="ml-1 text-xs text-text-mid">RMSE vs persistence</span>
             </div>
           )}
@@ -58,7 +59,7 @@ export default function MetricsPanel({ intel }: { intel: CityIntelligence }) {
                   <td className="py-1">+{h.horizon_h}h</td>
                   <td className="py-1 text-right">{h.rmse.toFixed(1)}</td>
                   <td className="py-1 text-right text-text-mid">{h.persistence_rmse.toFixed(1)}</td>
-                  <td className="py-1 text-right text-text-hi">+{h.improvement_pct.toFixed(0)}%</td>
+                  <td className="py-1 text-right text-text-hi">{skillLabel(h.improvement_pct)}</td>
                   <td className="py-1 text-right">{h.corr.toFixed(2)}</td>
                 </tr>
               ))}

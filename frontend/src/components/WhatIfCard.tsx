@@ -30,7 +30,7 @@ export default function WhatIfCard({ city, attribution }: { city: City; attribut
     let cancelled = false;
     const t = setTimeout(() => {
       api.simulate(city.id, attribution.zone_id, source, reduction)
-        .then((s) => !cancelled && setSim(s)).catch(() => {});
+        .then((s) => !cancelled && setSim(s)).catch(() => !cancelled && setSim(null));
     }, 120);
     return () => { cancelled = true; clearTimeout(t); };
   }, [city.id, attribution.zone_id, source, reduction]);

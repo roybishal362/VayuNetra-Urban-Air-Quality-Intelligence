@@ -85,13 +85,13 @@ body {
   .btn {
     @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-text-hi px-3.5 py-2 text-sm font-medium text-vn-base
            transition-[transform,background-color] duration-fast ease-standard hover:bg-white active:scale-[0.98]
-           focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/25 disabled:opacity-40;
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:opacity-40;
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-vn-750/60 px-3 py-2
            text-sm font-medium text-text backdrop-blur-md transition-colors duration-fast ease-standard
            hover:border-white/[0.14] hover:bg-vn-700/70 hover:text-text-hi active:scale-[0.98]
-           focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20;
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30;
   }
 }
 
@@ -144,6 +144,9 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(175, 45, 36, 0); }
 }
 .vn-pulse { animation: vn-pulse 1.8s ease-out infinite; }
+
+/* keyboard focus ring for map station markers */
+.vn-marker:focus-visible { outline: 2px solid #f4f5f6; outline-offset: 2px; }
 
 @keyframes vn-fade {
   from { opacity: 0; transform: translateY(6px); }

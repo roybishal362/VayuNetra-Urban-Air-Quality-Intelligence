@@ -6,16 +6,19 @@ import { api } from "@/lib/api";
 import { useCity } from "@/lib/cityStore";
 import type { CityComparison } from "@/lib/types";
 import { aqiColor } from "@/lib/aqi";
-import { compact } from "@/lib/format";
+import { compact, skillLabel } from "@/lib/format";
+import StateMsg from "@/components/StateMsg";
 
 export default function ComparePage() {
   const { setCityId } = useCity();
   const router = useRouter();
   const [data, setData] = useState<CityComparison[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
-  useEffect(() => { api.compare().then(setData).catch(() => setData([])); }, []);
+  useEffect(() => { api.compare().then(setData).catch((e) => { setErr(String(e)); setData([]); }); }, []);
 
-  if (!data) return <div className="grid h-full place-items-center text-slate-400">Loading national comparison…</div>;
+  if (err && (!data || !data.length)) return <StateMsg kind="error" title="Couldn’t load national comparison" detail={err} />;
+  if (!data) return <StateMsg title="Loading national comparison…" />;
   const maxAqi = Math.max(...data.map((c) => c.avg_aqi), 1);
   const totalExposed = data.reduce((s, c) => s + c.exposed, 0);
 
@@ -52,7 +55,7 @@ export default function ComparePage() {
                 <div className="text-[10px] uppercase tracking-wider text-slate-500">exposed</div>
               </div>
               <div className="hidden w-20 text-right md:block">
-                <div className="font-mono text-sm text-text-hi">+{c.improvement_pct.toFixed(0)}%</div>
+                <div className="font-mono text-sm text-text-hi">{skillLabel(c.improvement_pct)}</div>
                 <div className="text-[10px] uppercase tracking-wider text-slate-500">skill</div>
               </div>
               <div className="hidden w-16 text-right md:block">

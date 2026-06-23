@@ -2,10 +2,12 @@
 
 import { useCity } from "@/lib/cityStore";
 import AdvisoryCard from "@/components/AdvisoryCard";
+import StateMsg from "@/components/StateMsg";
 
 export default function AdvisoriesPage() {
-  const { city, intel } = useCity();
-  if (!intel || !city) return <div className="grid h-full place-items-center text-slate-400">Loading advisories…</div>;
+  const { city, intel, error } = useCity();
+  if (error && !intel) return <StateMsg kind="error" title="Couldn’t load advisories" detail={error} />;
+  if (!intel || !city) return <StateMsg title="Loading advisories…" />;
 
   return (
     <div className="h-full overflow-y-auto p-6">

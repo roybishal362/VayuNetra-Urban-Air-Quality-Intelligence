@@ -68,7 +68,7 @@ Data agents ─┐                                          ┌─────�
 ─────────────┘  └───────────┘   └──────────────────┘   └──────────────┘
                                           │                     │
                                           ▼                     ▼
-                         Next.js + MapLibre + deck.gl dashboard (grid heatmap,
+                         Next.js + MapLibre dashboard (3D AQI grid,
                          time slider, ward drill-down, enforcement queue, advisories)
 ```
 
@@ -100,11 +100,11 @@ deterministic generator. **It does not crash without keys.**
 - Multi-signal **source attribution** (confidence-scored, evidence chain)
 - **6 cities** (Delhi · Mumbai · Bengaluru · Kolkata · Chennai · Hyderabad) + national comparison
 - Forecast **blended with persistence** (provably never underperforms the baseline) +
-  **Validation lab** (backtest, predicted-vs-actual scatter, R², p10–p90 calibration)
+  **Validation lab** (backtest, predicted-vs-actual scatter, Pearson r, p10–p90 calibration)
 - Multilingual **advisory** + auditable **enforcement** agents (Groq LLM, template fallback)
 - **Hyperlocal** land-use-regression downscaling (OSM roads + industry)
 - Health-impact · live alerts · **what-if intervention simulator** · AI city briefing
-- MapLibre dashboard: heatmap · history+forecast · attribution · advisory · enforcement · validation · KPIs
+- MapLibre dashboard: 3D AQI skyline (with no-GPU SVG fallback) · history+forecast · attribution · advisory · enforcement · validation · KPIs · landing page
 - **14 passing tests** · production build green · runs in Codespaces
 
 ## 📚 Docs

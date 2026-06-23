@@ -2,10 +2,12 @@
 
 import { useCity } from "@/lib/cityStore";
 import MetricsPanel from "@/components/MetricsPanel";
+import StateMsg from "@/components/StateMsg";
 
 export default function ValidationPage() {
-  const { city, intel } = useCity();
-  if (!intel || !city) return <div className="grid h-full place-items-center text-slate-400">Loading validation…</div>;
+  const { city, intel, error } = useCity();
+  if (error && !intel) return <StateMsg kind="error" title="Couldn’t load validation data" detail={error} />;
+  if (!intel || !city) return <StateMsg title="Loading validation…" />;
 
   return (
     <div className="h-full overflow-y-auto p-6">

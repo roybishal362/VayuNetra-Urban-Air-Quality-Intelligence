@@ -30,9 +30,9 @@ const config: Config = {
         text: {
           hi: "#F4F5F6",
           DEFAULT: "#C9CBD0",
-          mid: "#9A9CA3",
-          low: "#6B6D74",
-          faint: "#45474D",
+          mid: "#A6A9B2", // ≥4.5:1 on the near-black canvas
+          low: "#82858E", // ≥4.5:1 — captions, axis ticks
+          faint: "#45474D", // decorative only (dividers, disabled)
         },
         // ── Accent is white. Color in this product is reserved for AQI data only.
         //    Legacy `brand` (was cyan) is remapped to near-white so every old

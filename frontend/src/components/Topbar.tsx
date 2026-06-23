@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { useCity } from "@/lib/cityStore";
 import { aqiColor } from "@/lib/aqi";
-import { compact } from "@/lib/format";
+import { compact, skillLabel } from "@/lib/format";
 
 function Kpi({ label, value, color }: { label: string; value: React.ReactNode; color?: string }) {
   return (
@@ -50,9 +50,11 @@ export default function Topbar() {
       <div className="ml-auto flex items-center gap-4 pr-1 sm:gap-5">
         {h && <Kpi label="City AQI" value={h.avg_aqi} color={aqiColor(h.avg_aqi)} />}
         {worst && <Kpi label="Worst" value={worst.aqi} color={aqiColor(worst.aqi)} />}
-        {h && <Kpi label="Exposed" value={compact(h.exposed_population)} />}
-        <Kpi label="Alerts" value={intel?.alerts?.length ?? "—"} color={severe ? "#E93F33" : undefined} />
-        {skill != null && <Kpi label="Skill" value={`+${skill.toFixed(0)}%`} />}
+        <div className="hidden items-center gap-4 sm:gap-5 lg:flex">
+          {h && <Kpi label="Exposed" value={compact(h.exposed_population)} />}
+          <Kpi label="Alerts" value={intel?.alerts?.length ?? "—"} color={severe ? "#E93F33" : undefined} />
+          {skill != null && <Kpi label="Skill" value={skillLabel(skill)} />}
+        </div>
       </div>
     </header>
   );

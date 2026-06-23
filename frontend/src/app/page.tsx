@@ -148,7 +148,7 @@ export default function Landing() {
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-vn-base/80 to-transparent" />
               <div className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-vn-base/60 px-2.5 py-1 backdrop-blur">
                 <span className="h-1.5 w-1.5 rounded-full bg-text-hi vn-breathe" />
-                <span className="font-mono text-[11px] text-text">LIVE · {hero?.name ?? "—"}</span>
+                <span className="font-mono text-[11px] text-text">{hero?.name ?? "—"} · CPCB AQI</span>
               </div>
               {/* floating live stats */}
               <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-2">

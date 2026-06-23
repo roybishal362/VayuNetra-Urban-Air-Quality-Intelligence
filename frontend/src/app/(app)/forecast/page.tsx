@@ -4,15 +4,17 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { useCity } from "@/lib/cityStore";
 import ZonePanel from "@/components/ZonePanel";
+import StateMsg from "@/components/StateMsg";
 import { aqiColor } from "@/lib/aqi";
 
 export default function ForecastPage() {
-  const { city, intel } = useCity();
+  const { city, intel, error } = useCity();
   const [zoneId, setZoneId] = useState<string | null>(null);
 
   useEffect(() => { setZoneId(city?.zones[0]?.id ?? null); }, [city?.id]);
 
-  if (!city || !intel) return <div className="grid h-full place-items-center text-slate-400">Loading forecast…</div>;
+  if (error && !intel) return <StateMsg kind="error" title="Couldn’t load forecast data" detail={error} />;
+  if (!city || !intel) return <StateMsg title="Loading forecast…" />;
   const attrById = new Map(intel.attributions.map((a) => [a.zone_id, a]));
   const attribution = zoneId ? attrById.get(zoneId) : undefined;
   const advisory = intel.advisories.find((a) => a.zone_id === zoneId);

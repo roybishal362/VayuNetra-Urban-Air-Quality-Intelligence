@@ -28,7 +28,9 @@ export default function TimeControl({
             onClick={() => onChange(o.value)}
             className={clsx(
               "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-              active ? "bg-brand text-ink-950" : "text-slate-300 hover:bg-ink-700",
+              active
+                ? "bg-text-hi text-vn-base"
+                : "text-text hover:bg-white/[0.06] hover:text-text-hi",
             )}
           >
             {o.label}

@@ -92,14 +92,16 @@ export default function CommandCenter() {
         )}
       </div>
 
-      <aside className="flex w-[400px] flex-shrink-0 flex-col border-l border-white/[0.06] bg-vn-900/60 backdrop-blur-xl xl:w-[440px]">
-        <div className="flex flex-shrink-0 border-b border-white/[0.06] px-2 pt-2">
+      <aside className="flex w-[360px] flex-shrink-0 flex-col border-l border-white/[0.06] bg-vn-900/60 backdrop-blur-xl lg:w-[400px] xl:w-[440px]">
+        <div role="tablist" aria-label="Detail panels" className="flex flex-shrink-0 border-b border-white/[0.06] px-2 pt-2">
           {(["overview", "enforce", "zone", "metrics"] as Tab[]).map((t) => (
             <button
               key={t}
+              role="tab"
+              aria-selected={tab === t}
               onClick={() => setTab(t)}
               className={clsx(
-                "relative flex-1 rounded-t-lg py-2.5 text-sm font-medium capitalize transition-colors duration-fast",
+                "relative flex-1 rounded-t-lg py-2.5 text-sm font-medium capitalize transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
                 tab === t ? "text-text-hi" : "text-text-mid hover:text-text",
               )}
             >

@@ -29,7 +29,7 @@ function Card({ city, item, onSelect }: { city: City; item: EnforcementItem; onS
 
   return (
     <div className="card p-3">
-      <div className="flex cursor-pointer items-start gap-3" onClick={onSelect}>
+      <button type="button" onClick={onSelect} className="flex w-full items-start gap-3 text-left">
         <div className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-ink-700 font-mono text-sm font-bold text-brand">
           {item.rank}
         </div>
@@ -45,7 +45,7 @@ function Card({ city, item, onSelect }: { city: City; item: EnforcementItem; onS
             </span>
           </div>
         </div>
-      </div>
+      </button>
 
       <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink-700">
         <div className="h-full rounded-full" style={{ width: `${item.priority}%`, background: color }} />

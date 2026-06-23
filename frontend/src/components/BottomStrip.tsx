@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import type { CityIntelligence } from "@/lib/types";
 import { AQI_BANDS, aqiColor } from "@/lib/aqi";
+import { skillLabel } from "@/lib/format";
 
 function Spark({ values, color = "#C9CBD0" }: { values: number[]; color?: string }) {
   if (values.length < 2) return <div className="h-9 w-32" />;
@@ -62,7 +63,7 @@ export default function BottomStrip({
       <Seg title="Forecast skill vs persistence">
         <div className="flex items-end gap-2">
           <span className="font-display text-2xl font-semibold leading-none tabular-nums text-text-hi">
-            +{skill[0]?.improvement_pct.toFixed(0) ?? 0}%
+            {skillLabel(skill[0]?.improvement_pct)}
           </span>
           <div className="flex gap-1">
             {skill.map((s) => (
