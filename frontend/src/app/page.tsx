@@ -70,7 +70,7 @@ export default function Landing() {
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-vn-base/70 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-5">
           <Link href="/" className="flex items-center gap-2.5 text-text-hi">
-            <Logo size={26} accent />
+            <Logo size={36} accent />
             <span className="font-display text-[17px] font-semibold tracking-tight">VayuNetra</span>
             <span className="hidden font-mono text-[10px] text-text-low sm:inline">वायु · नेत्र</span>
           </Link>
@@ -281,7 +281,7 @@ export default function Landing() {
         <div className="border-t border-white/[0.06]">
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-5 py-6 sm:flex-row">
             <div className="flex items-center gap-2 text-text-low">
-              <Logo size={18} />
+              <Logo size={22} />
               <span className="font-mono text-[11px]">VayuNetra · वायु नेत्र · built for Indian cities · CPCB AQI</span>
             </div>
             <a

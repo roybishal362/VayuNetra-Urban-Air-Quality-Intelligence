@@ -26,9 +26,9 @@ export default function SideNav() {
         href="/"
         aria-label="VayuNetra — back to home"
         title="Back to landing page"
-        className="group relative mb-2 grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-vn-850 text-text-hi transition-colors hover:border-white/20"
+        className="group relative mb-2 grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-vn-850 text-text-hi transition-colors hover:border-white/20"
       >
-        <Logo size={22} />
+        <Logo size={30} />
         <span className="pointer-events-none absolute left-14 z-50 hidden whitespace-nowrap rounded-md border border-white/10 bg-vn-800 px-2 py-1 text-xs text-text shadow-xl group-hover:block">
           Home / landing
         </span>
