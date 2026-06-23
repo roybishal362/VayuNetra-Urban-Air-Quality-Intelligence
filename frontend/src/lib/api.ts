@@ -5,7 +5,8 @@ import type {
 const BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000").replace(/\/$/, "");
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { cache: "no-store", signal: AbortSignal.timeout(15000) });
+  // 45s tolerates a free-tier backend cold start (Render spins down when idle).
+  const res = await fetch(`${BASE}${path}`, { cache: "no-store", signal: AbortSignal.timeout(45000) });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`API ${res.status} on ${path}${body ? ` — ${body.slice(0, 140)}` : ""}`);

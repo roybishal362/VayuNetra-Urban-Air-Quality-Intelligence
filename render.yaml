@@ -1,0 +1,27 @@
+# Render Blueprint for the VayuNetra backend API (FastAPI).
+# In Render: New → Blueprint → pick this repo. It reads this file automatically.
+# The build step TRAINS the 6 city models from the committed snapshots so the API
+# is fast on the very first request (no slow lazy-training at runtime).
+services:
+  - type: web
+    name: vayunetra-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt && python scripts/train_forecast.py"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: ENVIRONMENT
+        value: production
+      # Optional — leave blank and the app uses its deterministic fallback.
+      # Add your Groq key in the Render dashboard to enable AI advisories/briefings.
+      - key: GROQ_API_KEY
+        sync: false
+      - key: FIRMS_MAP_KEY
+        sync: false
+      - key: OPENAQ_API_KEY
+        sync: false

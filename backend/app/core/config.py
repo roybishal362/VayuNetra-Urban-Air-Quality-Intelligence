@@ -37,12 +37,11 @@ class Settings(BaseSettings):
     # --- behaviour ---
     allow_live_fetch: bool = True
     http_timeout_seconds: float = 20.0
-    cors_origins: list[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ]
-    # Allow the auto-forwarded GitHub Codespaces UI origin (…-3000.app.github.dev).
-    cors_origin_regex: str | None = r"https://.*\.app\.github\.dev"
+    # Public read-only API: allow any origin by default so the Vercel/Render frontend
+    # (and Codespaces previews) can call it. Override CORS_ORIGINS in the host env to
+    # lock it down to a specific domain. No cookies/credentials are used.
+    cors_origins: list[str] = ["*"]
+    cors_origin_regex: str | None = None
 
     @property
     def llm_enabled(self) -> bool:
