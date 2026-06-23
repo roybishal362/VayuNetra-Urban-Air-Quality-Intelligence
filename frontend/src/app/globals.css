@@ -148,6 +148,18 @@ body {
 /* keyboard focus ring for map station markers */
 .vn-marker:focus-visible { outline: 2px solid #f4f5f6; outline-offset: 2px; }
 
+/* branded loading splash — auto-fades, then becomes non-interactive */
+@keyframes vn-splash-out {
+  0%, 52% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+.vn-splash { animation: vn-splash-out 1.9s ease forwards; }
+@keyframes vn-splash-bar {
+  0% { transform: translateX(-130%); }
+  100% { transform: translateX(380%); }
+}
+.vn-splash-bar { animation: vn-splash-bar 1.1s ease-in-out infinite; }
+
 @keyframes vn-fade {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }

@@ -266,6 +266,7 @@ export default function Landing() {
         <div className="relative mx-auto max-w-7xl overflow-hidden px-5 py-20 text-center">
           <div className="pointer-events-none absolute inset-0 opacity-50" style={DOTS} />
           <Reveal className="relative">
+            <Logo size={72} accent className="mx-auto mb-5" />
             <div className="mx-auto mb-4 flex w-fit overflow-hidden rounded">
               {AQI_BANDS.map((b) => <span key={b.label} className="h-1 w-10" style={{ background: b.color }} />)}
             </div>
