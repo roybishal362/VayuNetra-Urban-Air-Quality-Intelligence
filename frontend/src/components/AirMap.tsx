@@ -263,16 +263,18 @@ export default function AirMap({
       el.setAttribute("aria-label", `${z.name}: AQI ${aqi || "n/a"}`);
       el.setAttribute("aria-pressed", String(selected));
       el.textContent = aqi ? String(aqi) : "–";
+      // NOTE: do NOT put a `transition` on this element or set its `transform` directly —
+      // MapLibre positions the marker via `transform`, so a transition makes it animate
+      // ("flow") from the top-left on every re-render, and setting transform clobbers the
+      // position. Hover feedback is done with box-shadow (a CSS class) instead.
       el.style.cssText =
         `appearance:none;padding:0;display:grid;place-items:center;width:30px;height:30px;border-radius:9999px;` +
         `background:${color};color:${textOn(color)};` +
         `font:600 12px var(--font-mono),ui-monospace,monospace;font-variant-numeric:tabular-nums;` +
         `border:2px solid ${selected ? "#F4F5F6" : "rgba(8,9,10,.72)"};` +
         `box-shadow:0 1px 3px rgba(0,0,0,.5),0 0 0 1px rgba(0,0,0,.35)${selected ? ",0 0 0 4px rgba(244,245,246,.22)" : ""};` +
-        `cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;`;
+        `cursor:pointer;`;
       if (aqi >= 401) el.classList.add("vn-pulse");
-      el.onmouseenter = () => { el.style.transform = "scale(1.18)"; };
-      el.onmouseleave = () => { el.style.transform = "scale(1)"; };
       el.onclick = (e) => { e.stopPropagation(); selectRef.current(z.id); };
       const marker = new maplibregl.Marker({ element: el }).setLngLat([z.center.lon, z.center.lat]).addTo(map);
       markersRef.current.push(marker);

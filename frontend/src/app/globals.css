@@ -145,7 +145,12 @@ body {
 }
 .vn-pulse { animation: vn-pulse 1.8s ease-out infinite; }
 
-/* keyboard focus ring for map station markers */
+/* map station markers — hover feedback via box-shadow ONLY (never transform; MapLibre
+   owns the transform for positioning, so transitioning/overwriting it makes markers fly). */
+.vn-marker { transition: box-shadow 0.15s ease; }
+.vn-marker:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 0 4px rgba(244, 245, 246, 0.28) !important;
+}
 .vn-marker:focus-visible { outline: 2px solid #f4f5f6; outline-offset: 2px; }
 
 /* branded loading splash — auto-fades, then becomes non-interactive */

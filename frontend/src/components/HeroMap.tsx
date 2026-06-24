@@ -128,7 +128,7 @@ export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; 
             "fill-extrusion-color": EXTRUSION_COLOR,
             "fill-extrusion-height": ["get", "height"],
             "fill-extrusion-base": 0,
-            "fill-extrusion-opacity": 0.85,
+            "fill-extrusion-opacity": 0.6,
             "fill-extrusion-vertical-gradient": true,
           },
         });

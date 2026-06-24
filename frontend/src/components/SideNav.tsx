@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import {
-  LayoutDashboard, TrendingUp, ShieldAlert, FlaskConical, BarChart3, Languages, Info,
+  LayoutDashboard, TrendingUp, ShieldAlert, FlaskConical, BarChart3, Languages, Info, HeartPulse,
 } from "lucide-react";
 import Logo from "./Logo";
 
@@ -15,6 +15,7 @@ const ITEMS = [
   { href: "/validation", icon: FlaskConical, label: "Validation" },
   { href: "/compare", icon: BarChart3, label: "National Compare" },
   { href: "/advisories", icon: Languages, label: "Advisories" },
+  { href: "/health", icon: HeartPulse, label: "Exposure & Health" },
   { href: "/about", icon: Info, label: "About" },
 ];
 
