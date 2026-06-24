@@ -100,6 +100,37 @@ function addBuildings(map: maplibregl.Map) {
   } catch { /* style has no building layer — fine */ }
 }
 
+// Spread overlapping station markers apart in screen space so labels stay readable
+// (wards that sit close together would otherwise stack: "5" hidden behind "500").
+function deoverlap(map: maplibregl.Map, markers: maplibregl.Marker[]) {
+  if (markers.length < 2) return;
+  const R = 34; // min centre-to-centre separation in px (markers are 30px)
+  const pts = markers.map((m) => {
+    const p = map.project(m.getLngLat());
+    return { m, x: p.x, y: p.y, ox: 0, oy: 0 };
+  });
+  for (let iter = 0; iter < 80; iter++) {
+    let moved = false;
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const a = pts[i], b = pts[j];
+        const dx = (b.x + b.ox) - (a.x + a.ox);
+        const dy = (b.y + b.oy) - (a.y + a.oy);
+        const d = Math.hypot(dx, dy) || 0.01;
+        if (d < R) {
+          const push = (R - d) / 2;
+          const ux = dx / d, uy = dy / d;
+          a.ox -= ux * push; a.oy -= uy * push;
+          b.ox += ux * push; b.oy += uy * push;
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+  for (const p of pts) p.m.setOffset([p.ox, p.oy]);
+}
+
 function addDataLayers(map: maplibregl.Map) {
   if (!map.getSource("grid")) {
     map.addSource("grid", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
@@ -185,6 +216,7 @@ export default function AirMap({
     const onReady = () => { applyData(map); map.resize(); map.triggerRepaint(); setReady(true); };
     map.on("load", onReady);
     map.once("idle", onReady);
+    map.on("moveend", () => deoverlap(map, markersRef.current)); // re-spread markers after zoom/pan
 
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(containerRef.current);
@@ -279,6 +311,7 @@ export default function AirMap({
       const marker = new maplibregl.Marker({ element: el }).setLngLat([z.center.lon, z.center.lat]).addTo(map);
       markersRef.current.push(marker);
     }
+    deoverlap(map, markersRef.current);
   }, [ready, city, attributions, selectedZoneId]);
 
   // ── fit to city ─────────────────────────────────────────────────────
