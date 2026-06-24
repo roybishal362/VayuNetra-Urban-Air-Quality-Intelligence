@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
+import { Play, Pause } from "lucide-react";
 import { api } from "@/lib/api";
 import { useCity } from "@/lib/cityStore";
 import type { GridResponse } from "@/lib/types";
@@ -21,6 +22,7 @@ const AirMap = dynamic(() => import("@/components/AirMap"), {
 });
 
 type Tab = "overview" | "enforce" | "zone" | "metrics";
+const gridKey = (t: TimeValue) => `${t.layer}-${t.horizon}`;
 
 function Placeholder({ text }: { text: string }) {
   return <div className="grid h-full place-items-center p-6 text-center text-sm text-text-low">{text}</div>;
@@ -28,8 +30,9 @@ function Placeholder({ text }: { text: string }) {
 
 export default function CommandCenter() {
   const { cityId, city, intel, loading, error, setCityId } = useCity();
-  const [grid, setGrid] = useState<GridResponse | null>(null);
+  const [gridCache, setGridCache] = useState<Record<string, GridResponse>>({});
   const [time, setTime] = useState<TimeValue>({ layer: "current", horizon: 0 });
+  const [playing, setPlaying] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
   const [showIndustry, setShowIndustry] = useState(false);
@@ -37,14 +40,42 @@ export default function CommandCenter() {
   const [is3D, setIs3D] = useState(true);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setSelectedZoneId(null); setTime({ layer: "current", horizon: 0 }); }, [cityId]);
+  const TLAPSE = useMemo<TimeValue[]>(() => [
+    { layer: "current", horizon: 0 }, { layer: "forecast", horizon: 24 },
+    { layer: "forecast", horizon: 48 }, { layer: "forecast", horizon: 72 },
+  ], []);
+  const grid = gridCache[gridKey(time)] ?? null;
+  const cacheReady = TLAPSE.every((t) => gridCache[gridKey(t)]);
 
+  useEffect(() => { setSelectedZoneId(null); setTime({ layer: "current", horizon: 0 }); setPlaying(false); }, [cityId]);
+
+  // pre-fetch every horizon grid so the time-lapse plays smoothly
   useEffect(() => {
     if (!cityId || !intel) return;
     let cancelled = false;
-    api.grid(cityId, time.layer, time.horizon).then((g) => !cancelled && setGrid(g)).catch(() => {});
+    setGridCache({});
+    Promise.all(TLAPSE.map((t) =>
+      api.grid(cityId, t.layer, t.horizon).then((g) => [gridKey(t), g] as const).catch(() => null),
+    )).then((res) => {
+      if (cancelled) return;
+      const c: Record<string, GridResponse> = {};
+      for (const r of res) if (r) c[r[0]] = r[1];
+      setGridCache(c);
+    });
     return () => { cancelled = true; };
-  }, [cityId, time, intel]);
+  }, [cityId, intel, TLAPSE]);
+
+  // time-lapse playback — cycle Now → +24h → +48h → +72h (skyline rises/falls smoothly)
+  useEffect(() => {
+    if (!playing) return;
+    const id = setInterval(() => {
+      setTime((cur) => {
+        const i = TLAPSE.findIndex((t) => t.layer === cur.layer && t.horizon === cur.horizon);
+        return TLAPSE[(i + 1) % TLAPSE.length];
+      });
+    }, 2000);
+    return () => clearInterval(id);
+  }, [playing, TLAPSE]);
 
   useEffect(() => { sidebarRef.current?.scrollTo({ top: 0, behavior: "smooth" }); }, [tab, selectedZoneId]);
 
@@ -71,6 +102,15 @@ export default function CommandCenter() {
         {/* map toolbar — all map controls live here, never floating over the markers */}
         <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-white/[0.06] bg-vn-900/50 px-3 py-2 backdrop-blur">
           <TimeControl value={time} onChange={setTime} />
+          <button
+            onClick={() => setPlaying((p) => !p)}
+            disabled={!cacheReady}
+            title={playing ? "Pause forecast time-lapse" : "Play the 72-hour forecast time-lapse"}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-vn-750/60 px-2.5 py-1.5 text-[11px] font-medium text-text transition-colors hover:border-white/[0.14] hover:text-text-hi disabled:opacity-40"
+          >
+            {playing ? <Pause size={12} /> : <Play size={12} />}
+            {playing ? "Pause" : "Time-lapse"}
+          </button>
           {time.layer === "forecast" && (
             <span className="rounded-md border border-white/[0.08] bg-vn-800/60 px-2.5 py-1 font-mono text-[11px] text-text">Predicted · +{time.horizon}h</span>
           )}

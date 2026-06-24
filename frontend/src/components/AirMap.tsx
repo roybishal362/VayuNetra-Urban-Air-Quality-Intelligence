@@ -262,7 +262,6 @@ export default function AirMap({
       el.className = "vn-marker";
       el.setAttribute("aria-label", `${z.name}: AQI ${aqi || "n/a"}`);
       el.setAttribute("aria-pressed", String(selected));
-      el.title = `${z.name} · AQI ${aqi || "n/a"}${a?.category ? " · " + a.category : ""}`;
       el.textContent = aqi ? String(aqi) : "–";
       el.style.cssText =
         `appearance:none;padding:0;display:grid;place-items:center;width:30px;height:30px;border-radius:9999px;` +

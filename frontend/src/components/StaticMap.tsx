@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { City, GridResponse, ZoneAttribution } from "@/lib/types";
 import { aqiColor, textOn, AQI_BANDS } from "@/lib/aqi";
 
@@ -19,7 +19,6 @@ export default function StaticMap({
   onSelectZone: (id: string) => void;
   onTryGL?: () => void;
 }) {
-  const [hoverId, setHoverId] = useState<string | null>(null);
   const b = city.bbox;
   const W = 1000;
   const midLat = (b.min_lat + b.max_lat) / 2;
@@ -38,8 +37,6 @@ export default function StaticMap({
   }, [grid, lonSpan, midLat]);
 
   const byId = useMemo(() => new Map(attributions.map((a) => [a.zone_id, a])), [attributions]);
-  const hovered = hoverId ? byId.get(hoverId) : undefined;
-  const hoveredZone = hoverId ? city.zones.find((z) => z.id === hoverId) : undefined;
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-vn-base">
@@ -75,8 +72,6 @@ export default function StaticMap({
               transform={`translate(${px(z.center.lon)} ${py(z.center.lat)})`}
               style={{ cursor: "pointer" }}
               onClick={() => onSelectZone(z.id)}
-              onMouseEnter={() => setHoverId(z.id)}
-              onMouseLeave={() => setHoverId(null)}
             >
               <circle r={selected ? 17 : 14} fill={color} fillOpacity={0.95}
                       stroke={selected ? "#F4F5F6" : "rgba(8,9,10,0.7)"} strokeWidth={selected ? 3 : 2} />
@@ -88,23 +83,6 @@ export default function StaticMap({
           );
         })}
       </svg>
-
-      {/* hover readout */}
-      {hovered && hoveredZone && (
-        <div className="glass pointer-events-none absolute left-3 top-3 z-20 w-[200px] px-3 py-2">
-          <div className="truncate text-[13px] font-semibold text-text-hi">{hoveredZone.name}</div>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="rounded-md px-1.5 py-0.5 font-mono text-sm font-bold tabular-nums"
-                  style={{ background: aqiColor(hovered.aqi), color: textOn(aqiColor(hovered.aqi)) }}>
-              {hovered.aqi || "—"}
-            </span>
-            <span className="text-[11px] text-text-mid">{hovered.category}</span>
-          </div>
-          {hovered.contributions?.[0] && (
-            <div className="mt-1 truncate text-[11px] text-text-low">{hovered.contributions[0].label}</div>
-          )}
-        </div>
-      )}
 
       {/* mode note + optional retry */}
       <div className="absolute right-3 top-3 z-20 flex items-center gap-2">
