@@ -27,6 +27,7 @@ export interface ZoneAttribution {
   zone_id: string; zone_name: string; ts: string; pm25: number; aqi: number; category: string;
   dominant_source: string; dominant_label: string; overall_confidence: number;
   contributions: SourceContribution[]; evidence: Evidence[]; fires_upwind: number; fires_modeled: boolean;
+  wind_speed?: number; wind_dir?: number | null;
 }
 
 export interface AdvisoryItem {

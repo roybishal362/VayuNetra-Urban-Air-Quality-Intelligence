@@ -47,6 +47,17 @@ export default function CommandCenter() {
   const grid = gridCache[gridKey(time)] ?? null;
   const cacheReady = TLAPSE.every((t) => gridCache[gridKey(t)]);
 
+  // city wind = mean speed + circular-mean direction across wards (for the wind animation)
+  const wind = useMemo(() => {
+    const a = (intel?.attributions ?? []).filter((x) => x.wind_dir != null);
+    if (!a.length) return null;
+    const speed = a.reduce((s, x) => s + (x.wind_speed ?? 0), 0) / a.length;
+    let sx = 0, sy = 0;
+    for (const x of a) { const r = ((x.wind_dir as number) * Math.PI) / 180; sx += Math.cos(r); sy += Math.sin(r); }
+    const dir = (((Math.atan2(sy, sx) * 180) / Math.PI) + 360) % 360;
+    return { dir, speed };
+  }, [intel]);
+
   useEffect(() => { setSelectedZoneId(null); setTime({ layer: "current", horizon: 0 }); setPlaying(false); }, [cityId]);
 
   // pre-fetch every horizon grid so the time-lapse plays smoothly
@@ -146,6 +157,7 @@ export default function CommandCenter() {
             showIndustry={showIndustry}
             basemap={basemap}
             is3D={is3D}
+            wind={wind}
           />
           {loading && (
             <div className="absolute inset-0 z-20 grid place-items-center bg-vn-base/40 backdrop-blur-sm">

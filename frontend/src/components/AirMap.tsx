@@ -7,8 +7,12 @@ import type { City, GridResponse, ZoneAttribution } from "@/lib/types";
 import { aqiColor, textOn, AQI_BANDS } from "@/lib/aqi";
 import { hasWebGL } from "@/lib/webgl";
 import StaticMap from "./StaticMap";
+import WindLayer from "./WindLayer";
 
 export type Basemap = "dark" | "streets" | "sat";
+
+const COMPASS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+const compass = (deg: number) => COMPASS[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16];
 
 // MapTiler vector basemaps (3D-capable). Key can be overridden via env; otherwise the
 // project key is used so the premium maps work out of the box.
@@ -52,6 +56,7 @@ interface Props {
   showIndustry?: boolean;
   basemap: Basemap;
   is3D: boolean;
+  wind?: { dir: number; speed: number } | null;
 }
 
 function cellPolygon(lat: number, lon: number, stepKm: number) {
@@ -161,7 +166,7 @@ function addDataLayers(map: maplibregl.Map) {
 }
 
 export default function AirMap({
-  city, grid, attributions, selectedZoneId, onSelectZone, industrial, showIndustry, basemap, is3D,
+  city, grid, attributions, selectedZoneId, onSelectZone, industrial, showIndustry, basemap, is3D, wind,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -339,6 +344,19 @@ export default function AirMap({
   return (
     <div className="relative h-full w-full overflow-hidden">
       <div ref={containerRef} className="h-full w-full" />
+
+      {ready && mapRef.current && wind && wind.speed > 0.3 && (
+        <WindLayer map={mapRef.current} dir={wind.dir} speed={wind.speed} />
+      )}
+
+      {wind && wind.speed > 0.3 && (
+        <div className="glass absolute left-3 top-3 z-20 flex items-center gap-2 px-2.5 py-1.5">
+          <svg width="13" height="13" viewBox="0 0 24 24" className="text-text-hi" style={{ transform: `rotate(${(wind.dir + 180) % 360}deg)` }}>
+            <path d="M12 3 L12 21 M12 3 L7.5 9 M12 3 L16.5 9" stroke="currentColor" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span className="font-mono text-[11px] text-text">wind from {compass(wind.dir)} · {(wind.speed * 3.6).toFixed(0)} km/h</span>
+        </div>
+      )}
 
       {tilesBlocked && (
         <div className="glass pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 px-2.5 py-1 font-mono text-[11px] text-text-mid">

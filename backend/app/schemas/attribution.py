@@ -35,3 +35,5 @@ class ZoneAttribution(BaseModel):
     evidence: list[Evidence]
     fires_upwind: int
     fires_modeled: bool = False   # True when fire signal came from the seasonal model, not live FIRMS
+    wind_speed: float = 0.0       # m/s at 10 m
+    wind_dir: float | None = None  # meteorological degrees the wind blows FROM

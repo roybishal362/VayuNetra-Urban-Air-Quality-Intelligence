@@ -187,6 +187,8 @@ def attribute_zone(obs: CityObservations, city: City, zone_id: str) -> ZoneAttri
         overall_confidence=round(overall_conf, 2),
         contributions=contributions, evidence=evidence, fires_upwind=fires_n,
         fires_modeled=fires_modeled,
+        wind_speed=round(float(wind), 1),
+        wind_dir=round(float(wdir), 0) if wdir is not None else None,
     )
 
 
