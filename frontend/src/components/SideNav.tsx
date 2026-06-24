@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import {
-  LayoutDashboard, TrendingUp, ShieldAlert, FlaskConical, BarChart3, Languages, Info, HeartPulse,
+  LayoutDashboard, TrendingUp, LineChart, ShieldAlert, FlaskConical, BarChart3, Languages, Info, HeartPulse,
 } from "lucide-react";
 import Logo from "./Logo";
 
 const ITEMS = [
   { href: "/console", icon: LayoutDashboard, label: "Command Center" },
   { href: "/forecast", icon: TrendingUp, label: "Forecast" },
+  { href: "/trends", icon: LineChart, label: "Trends" },
   { href: "/enforcement", icon: ShieldAlert, label: "Enforcement" },
   { href: "/validation", icon: FlaskConical, label: "Validation" },
   { href: "/compare", icon: BarChart3, label: "National Compare" },
