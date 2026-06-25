@@ -48,8 +48,13 @@ flowchart LR
 | **Open-Meteo Weather** | wind, temperature, humidity, rain, and **boundary-layer height** (how "tall" the air is — key for pollution) | No |
 | **NASA FIRMS** | satellite-detected active fires (upwind crop/biomass burning) | Free key (a seasonal model is used if absent — and we say so) |
 | **OpenStreetMap** | roads, industrial areas, population, schools/hospitals | No |
+| **WRI Global Power Plant DB** | 861 geolocated Indian power plants (fuel + capacity) — real registered emitters for attribution + enforcement | No (committed reference) |
+
+> 🛰️ **Satellite note:** CAMS (via Open-Meteo) already assimilates **Sentinel-5P / TROPOMI**, so the satellite NO₂/SO₂/CO signal is in the data without us processing heavy NetCDF files.
 
 **The safety net:** every live pull falls back to **committed offline snapshots** of *real* data (`data/snapshots/*.json.gz`). So the app works even with **zero internet** — perfect for a live demo where the Wi-Fi always dies — and quietly upgrades to live data when the network is there.
+
+**What we validate (the honesty layer):** forecast skill vs persistence (9,600-sample hold-out); attribution vs **published receptor studies** (84.5%) *and* the **TERI emission inventory**; the what-if engine vs the **2020 COVID lockdown** (predicted 55% vs measured 53%). Decision tools on top: **enforcement ROI optimiser**, **what-if-at-source**, the **pollution blame-graph**, and an **₹-cost index** — delivered to citizens via a **Telegram bot in 6 regional languages** (SMS/WhatsApp adapters ready).
 
 ---
 
