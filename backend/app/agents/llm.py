@@ -82,13 +82,11 @@ class LLM:
         if not self.enabled or self._circuit_open():
             return None
         if self.provider == "groq":
-            txt = self._groq(system, prompt, max_tokens, 0.2, json_mode=True)
-            if not txt:
-                # Groq's strict JSON mode 400s ("json_validate_failed") when the model's
-                # output isn't clean JSON. Retry as plain text and extract below — far more
-                # robust, and it's why the advisories now actually use the LLM.
-                txt = self._groq(system + " Respond with ONLY valid minified JSON, no prose.",
-                                 prompt, max_tokens, 0.2, json_mode=False)
+            # Groq's strict JSON mode 400s ("json_validate_failed") for this model and
+            # wastes a round-trip. Ask for JSON in the prompt and extract it below — one
+            # call, no failures, and the advisories actually use the LLM.
+            txt = self._groq(system + " Respond with ONLY valid minified JSON, no prose.",
+                             prompt, max_tokens, 0.2, json_mode=False)
         else:
             txt = self.generate(system + " Respond with ONLY valid minified JSON.", prompt, max_tokens, 0.2)
         if not txt:
