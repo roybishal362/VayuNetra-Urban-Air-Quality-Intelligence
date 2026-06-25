@@ -77,6 +77,12 @@ export interface WhatIf {
   people_protected: number; reductions: Record<string, number>;
 }
 
+export interface BlameGraph {
+  city_id: string; wind_from: number | null;
+  nodes: { zone_id: string; zone_name: string; lat: number; lon: number; aqi: number }[];
+  edges: { from: string; to: string; weight: number }[];
+}
+
 export interface EnforcementItem {
   rank: number; zone_id: string; zone_name: string; priority: number;
   dominant_source: string; dominant_label: string; current_aqi: number; forecast_aqi_24h: number;

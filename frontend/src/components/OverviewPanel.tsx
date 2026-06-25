@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import type { CityComparison, CityIntelligence } from "@/lib/types";
 import { aqiColor } from "@/lib/aqi";
 import { compact, skillLabel } from "@/lib/format";
+import BlameGraphCard from "@/components/BlameGraphCard";
 
 const ALERT_COLOR: Record<string, string> = { severe: "#E93F33", warning: "#F29C33", watch: "#FFF833" };
 
@@ -91,6 +92,8 @@ export default function OverviewPanel({
           Open printable situation brief →
         </Link>
       </div>
+
+      <BlameGraphCard cityId={intel.city_id} />
 
       {h && (
         <div className="card p-3">

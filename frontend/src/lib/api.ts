@@ -1,6 +1,6 @@
 import type {
   City, CityComparison, CityIntelligence, GridResponse, SimulationResult, ZoneForecast, ZoneHistory,
-  AttributionValidation, EnforcementRoi, HealthCost, CityCompliance, Intervention, WhatIf,
+  AttributionValidation, EnforcementRoi, HealthCost, CityCompliance, Intervention, WhatIf, BlameGraph,
 } from "./types";
 
 const BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000").replace(/\/$/, "");
@@ -39,6 +39,7 @@ export const api = {
   enforcementRoi: (cid: string, inspectors: number) =>
     get<EnforcementRoi>(`/api/cities/${cid}/enforcement/roi?inspectors=${inspectors}`),
   healthCost: (cid: string) => get<HealthCost>(`/api/cities/${cid}/health-cost`),
+  blameGraph: (cid: string) => get<BlameGraph>(`/api/cities/${cid}/blame-graph`),
   compliance: () => get<CityCompliance[]>("/api/compliance"),
   interventions: () => get<Intervention[]>("/api/interventions"),
   whatif: (cid: string, r: Record<string, number>) =>

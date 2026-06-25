@@ -19,6 +19,7 @@ from app.services.attribution_validation import validate as validate_attribution
 from app.services.enforcement_roi import optimize as roi_optimize
 from app.services.health_cost import city_health_cost
 from app.services.compliance import city_compliance, intervention_ledger
+from app.services.blame_graph import blame_graph as build_blame_graph
 from app.services.downscale import factor_at, scale_forecast
 from app.services.intelligence_service import compare_cities, get_city_intelligence, get_model
 from app.services.scenario import build_history, city_whatif, simulate_reduction
@@ -159,6 +160,14 @@ def compliance():
 def interventions():
     """Honest ledger of real air-quality interventions and what they actually did to AQI."""
     return intervention_ledger()
+
+
+@router.get("/cities/{cid}/blame-graph", tags=["intelligence"])
+def blame_graph_endpoint(cid: str):
+    """Wind-transport 'who pollutes whom' graph — directed source→receptor edges between wards."""
+    city = _require_city(cid)
+    intel = get_city_intelligence(cid)
+    return build_blame_graph(city, intel.attributions)
 
 
 @router.get("/cities/{cid}/whatif", tags=["intelligence"])
