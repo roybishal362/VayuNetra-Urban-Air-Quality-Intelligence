@@ -17,6 +17,7 @@ from app.schemas.scenario import SimulationResult, ZoneHistory
 from app.services import grid as grid_service
 from app.services.attribution_validation import validate as validate_attribution
 from app.services.enforcement_roi import optimize as roi_optimize
+from app.services.health_cost import city_health_cost
 from app.services.downscale import factor_at, scale_forecast
 from app.services.intelligence_service import compare_cities, get_city_intelligence, get_model
 from app.services.scenario import build_history, simulate_reduction
@@ -129,3 +130,11 @@ def enforcement_roi(cid: str, inspectors: int = Query(3, ge=1, le=50)):
     city = _require_city(cid)
     intel = get_city_intelligence(cid)
     return roi_optimize(city, intel.attributions, inspectors)
+
+
+@router.get("/cities/{cid}/health-cost", tags=["intelligence"])
+def health_cost(cid: str):
+    """Air-Health-Cost Index — the daily ₹ damage of this city's pollution, per ward."""
+    city = _require_city(cid)
+    intel = get_city_intelligence(cid)
+    return city_health_cost(city, intel.attributions)
