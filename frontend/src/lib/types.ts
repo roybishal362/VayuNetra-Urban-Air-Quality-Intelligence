@@ -57,6 +57,12 @@ export interface EnforcementRoi {
   selected: { zone_id: string; zone_name: string; dominant_label: string; aqi: number; population: number; burden_share: number }[];
 }
 
+export interface HealthCost {
+  city_id: string; total_cr_day: number; total_cr_year: number; per_capita_rs_day: number;
+  rows: { zone_id: string; zone_name: string; pm25: number; population: number; cost_cr_day: number }[];
+  methodology: string;
+}
+
 export interface EnforcementItem {
   rank: number; zone_id: string; zone_name: string; priority: number;
   dominant_source: string; dominant_label: string; current_aqi: number; forecast_aqi_24h: number;

@@ -1,6 +1,6 @@
 import type {
   City, CityComparison, CityIntelligence, GridResponse, SimulationResult, ZoneForecast, ZoneHistory,
-  AttributionValidation, EnforcementRoi,
+  AttributionValidation, EnforcementRoi, HealthCost,
 } from "./types";
 
 const BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000").replace(/\/$/, "");
@@ -38,6 +38,7 @@ export const api = {
     get<AttributionValidation>(`/api/cities/${cid}/attribution-validation`),
   enforcementRoi: (cid: string, inspectors: number) =>
     get<EnforcementRoi>(`/api/cities/${cid}/enforcement/roi?inspectors=${inspectors}`),
+  healthCost: (cid: string) => get<HealthCost>(`/api/cities/${cid}/health-cost`),
   enforcementBrief: (cid: string, zid: string) =>
     get<{ zone_id: string; generated_by: string; brief: string }>(
       `/api/cities/${cid}/enforcement/${zid}/brief`,

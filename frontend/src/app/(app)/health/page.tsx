@@ -5,6 +5,7 @@ import { useCity } from "@/lib/cityStore";
 import { aqiColor } from "@/lib/aqi";
 import { compact } from "@/lib/format";
 import { cigarettesPerDay, shortTermMortalityRiskPct, personalAdvice, GROUPS } from "@/lib/health";
+import HealthCostCard from "@/components/HealthCostCard";
 import StateMsg from "@/components/StateMsg";
 
 function Stat({ label, value, sub, color }: { label: string; value: React.ReactNode; sub?: string; color?: string }) {
@@ -60,6 +61,8 @@ export default function HealthPage() {
           <Stat label="Excess mortality risk" value={`+${mortCity.toFixed(1)}%`} sub="short-term, vs WHO-safe air" color={mortCity >= 5 ? "#E93F33" : undefined} />
           <Stat label="In harmful air" value={h ? compact(h.exposed_population) : "—"} sub="Poor air or worse" />
         </div>
+
+        <HealthCostCard cityId={city.id} />
 
         {/* personal exposure */}
         <div className="card p-4">
