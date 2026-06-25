@@ -56,6 +56,23 @@ function Card({ city, item, onSelect }: { city: City; item: EnforcementItem; onS
         ~{item.population_exposed.toLocaleString()} residents · {item.vulnerable_sites} schools/hospitals · conf {Math.round(item.confidence * 100)}%
       </div>
 
+      {item.matched_sources && item.matched_sources.length > 0 && (
+        <div className="mt-2 rounded-lg border border-white/[0.06] bg-vn-850/50 p-2">
+          <div className="eyebrow mb-1">Registered emitters nearby</div>
+          <ul className="space-y-1">
+            {item.matched_sources.slice(0, 3).map((s, i) => (
+              <li key={i} className="flex items-center gap-2 text-[11px]">
+                <span className={`inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full ${s.upwind ? "bg-[#E93F33]" : "bg-white/25"}`} />
+                <span className="truncate text-text">{s.name}</span>
+                <span className="ml-auto flex-shrink-0 font-mono text-text-low">{s.distance_km}km {s.bearing}</span>
+                {s.upwind && <span className="flex-shrink-0 rounded bg-[#E93F33]/15 px-1 font-mono text-[9px] font-semibold text-[#E93F33]">UPWIND</span>}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-1 font-mono text-[9px] text-text-low">WRI power-plant registry · upwind = plume reaches this ward now</div>
+        </div>
+      )}
+
       {brief ? (
         <p className="mt-2 rounded-lg border border-ink-700 bg-ink-850/60 p-2 text-xs leading-relaxed text-slate-200">{brief}</p>
       ) : (

@@ -36,11 +36,17 @@ export interface AdvisoryItem {
   languages: Record<string, string>; generated_by: string;
 }
 
+export interface MatchedSource {
+  name: string; kind: string; lat: number; lon: number;
+  distance_km: number; bearing: string; upwind: boolean; detail: string;
+}
+
 export interface EnforcementItem {
   rank: number; zone_id: string; zone_name: string; priority: number;
   dominant_source: string; dominant_label: string; current_aqi: number; forecast_aqi_24h: number;
   trend: string; population_exposed: number; vulnerable_sites: number;
   recommended_action: string; evidence: string[]; confidence: number;
+  matched_sources?: MatchedSource[];
 }
 
 export interface HorizonMetric {
