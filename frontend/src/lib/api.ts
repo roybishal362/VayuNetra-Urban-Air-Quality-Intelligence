@@ -5,8 +5,10 @@ import type {
 const BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000").replace(/\/$/, "");
 
 async function get<T>(path: string): Promise<T> {
-  // 45s tolerates a free-tier backend cold start (Render spins down when idle).
-  const res = await fetch(`${BASE}${path}`, { cache: "no-store", signal: AbortSignal.timeout(45000) });
+  // Honor the backend's Cache-Control (short max-age + stale-while-revalidate) so repeat
+  // requests are served from the browser cache instantly instead of re-hitting the network.
+  // 45s timeout tolerates a free-tier backend cold start (Render spins down when idle).
+  const res = await fetch(`${BASE}${path}`, { cache: "default", signal: AbortSignal.timeout(45000) });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`API ${res.status} on ${path}${body ? ` — ${body.slice(0, 140)}` : ""}`);

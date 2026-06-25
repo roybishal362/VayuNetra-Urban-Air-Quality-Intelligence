@@ -318,12 +318,17 @@ export default function AirMap({
     for (const z of city.zones) {
       const a = byId.get(z.id);
       const aqi = zoneAqiRef.current?.[z.id] ?? a?.aqi ?? 0;
+      // Outer wrapper is what MapLibre positions (it owns the wrapper's `transform`).
+      // The inner button is what we style/repaint — so restyling on a horizon change
+      // never clobbers the positioning transform (which made markers jump to the corner).
+      const wrap = document.createElement("div");
       const el = document.createElement("button");
       el.type = "button";
       el.className = "vn-marker";
       el.onclick = (e) => { e.stopPropagation(); selectRef.current(z.id); };
       paintMarker(el, z.name, aqi, z.id === selectedZoneId);
-      const marker = new maplibregl.Marker({ element: el }).setLngLat([z.center.lon, z.center.lat]).addTo(map);
+      wrap.appendChild(el);
+      const marker = new maplibregl.Marker({ element: wrap }).setLngLat([z.center.lon, z.center.lat]).addTo(map);
       markersRef.current.push(marker);
       markerElsRef.current.set(z.id, el);
     }

@@ -64,6 +64,17 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def cache_control(request: Request, call_next):
+    """Let browsers/CDN cache GET responses briefly and revalidate in the background.
+    Data is hourly and the server already does stale-while-revalidate, so a short max-age
+    makes repeat navigations instant without ever showing meaningfully stale air quality."""
+    response = await call_next(request)
+    if request.method == "GET" and request.url.path.startswith("/api/") and response.status_code == 200:
+        response.headers.setdefault("Cache-Control", "public, max-age=30, stale-while-revalidate=600")
+    return response
+
+
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
     """QA gate: a failure in any subsystem returns a clean JSON error, never a crash."""

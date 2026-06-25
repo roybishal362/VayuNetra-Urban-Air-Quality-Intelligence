@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import type { City, CityIntelligence } from "./types";
 
@@ -28,6 +28,9 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
   const [intel, setIntel] = useState<CityIntelligence | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Per-city bundle cache: revisiting a city shows its data instantly and refreshes in the
+  // background, instead of blanking to a spinner on every switch (client-side SWR).
+  const intelCache = useRef<Record<string, CityIntelligence>>({});
 
   useEffect(() => {
     api.cities()
@@ -38,11 +41,13 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!cityId) return;
     let cancelled = false;
-    setLoading(true); setError(null); setIntel(null);
+    const cached = intelCache.current[cityId];
+    if (cached) { setIntel(cached); setError(null); setLoading(false); }   // instant from cache
+    else { setIntel(null); setError(null); setLoading(true); }             // first visit → spinner
     api.intelligence(cityId)
-      .then((it) => !cancelled && setIntel(it))
-      .catch((e) => !cancelled && setError(String(e)))
-      .finally(() => !cancelled && setLoading(false));
+      .then((it) => { if (cancelled) return; intelCache.current[cityId] = it; setIntel(it); setError(null); })
+      .catch((e) => { if (!cancelled && !intelCache.current[cityId]) setError(String(e)); })
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [cityId]);
 
@@ -54,7 +59,7 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
     if (!cityId) return;
     let stop = false;
     const refresh = () => {
-      api.intelligence(cityId).then((it) => { if (!stop) setIntel(it); }).catch(() => {});
+      api.intelligence(cityId).then((it) => { if (!stop) { intelCache.current[cityId] = it; setIntel(it); } }).catch(() => {});
     };
     const id = window.setInterval(refresh, 5 * 60 * 1000);
     const onVisible = () => { if (document.visibilityState === "visible") refresh(); };

@@ -24,13 +24,16 @@ export interface Group {
   hint: string;
 }
 
+// `hint` describes why the group is weighted more sensitive — NOT a statement that there is
+// risk right now. The actual verdict comes from personalAdvice(), which scales with the live
+// AQI (so at clean air every group reads "Low risk").
 export const GROUPS: Group[] = [
-  { id: "healthy", label: "Healthy adult", mult: 1.0, hint: "no known sensitivity" },
-  { id: "child", label: "Child", mult: 1.6, hint: "developing lungs, more air per kg" },
-  { id: "elderly", label: "Elderly 65+", mult: 1.7, hint: "higher cardiovascular risk" },
-  { id: "respiratory", label: "Asthma / heart / lung", mult: 2.2, hint: "pre-existing condition" },
-  { id: "outdoor", label: "Outdoor worker", mult: 1.8, hint: "long exposure + exertion" },
-  { id: "pregnant", label: "Pregnant", mult: 1.5, hint: "foetal development risk" },
+  { id: "healthy", label: "Healthy adult", mult: 1.0, hint: "no added sensitivity" },
+  { id: "child", label: "Child", mult: 1.6, hint: "developing lungs; breathe more air per kg" },
+  { id: "elderly", label: "Elderly 65+", mult: 1.7, hint: "more sensitive heart & lungs" },
+  { id: "respiratory", label: "Asthma / heart / lung", mult: 2.2, hint: "a condition that reacts to pollution" },
+  { id: "outdoor", label: "Outdoor worker", mult: 1.8, hint: "long hours outdoors with exertion" },
+  { id: "pregnant", label: "Pregnant", mult: 1.5, hint: "extra caution worthwhile when air is poor" },
 ];
 
 export interface Advice {
