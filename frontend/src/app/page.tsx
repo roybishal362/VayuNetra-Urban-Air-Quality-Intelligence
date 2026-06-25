@@ -58,6 +58,20 @@ export default function Landing() {
   }, []);
 
   const heroCmp = useMemo(() => compare.find((c) => c.city_id === hero?.id), [compare, hero]);
+  // station AQI dots for the hero map: each ward's centre, AQI from its nearest grid cell
+  const heroMarkers = useMemo(() => {
+    if (!hero || !cells.length) return [];
+    const city = cities.find((c) => c.id === hero.id);
+    if (!city?.zones?.length) return [];
+    return city.zones.map((z) => {
+      let best = cells[0], bd = Infinity;
+      for (const c of cells) {
+        const d = (c.lat - z.center.lat) ** 2 + (c.lon - z.center.lon) ** 2;
+        if (d < bd) { bd = d; best = c; }
+      }
+      return { lat: z.center.lat, lon: z.center.lon, aqi: best?.aqi ?? 0, name: z.name };
+    });
+  }, [hero, cells, cities]);
   const citiesLive = cities.length || compare.length;
   const wards = useMemo(() => cities.reduce((s, c) => s + (c.zones?.length ?? 0), 0), [cities]);
   const skill = compare.length
@@ -140,7 +154,7 @@ export default function Landing() {
             <div className="glass relative h-[420px] overflow-hidden rounded-2xl lg:h-[540px]">
               <div className="absolute inset-0">
                 {cells.length > 0 && hero ? (
-                  <HeroMap cells={cells} center={hero.center} stepKm={hero.step} />
+                  <HeroMap cells={cells} center={hero.center} stepKm={hero.step} markers={heroMarkers} />
                 ) : (
                   <div className="grid h-full w-full place-items-center text-sm text-text-low">Loading live skyline…</div>
                 )}

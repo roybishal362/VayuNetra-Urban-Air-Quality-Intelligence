@@ -4,70 +4,50 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type StyleSpecification, type ExpressionSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { GridCell, LatLon } from "@/lib/types";
+import { aqiColor, textOn } from "@/lib/aqi";
 import { hasWebGL } from "@/lib/webgl";
 
-const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "nc5sshnRlIfoqUGKBQkq";
-const HERO_STYLE = MAPTILER_KEY ? `https://api.maptiler.com/maps/darkmatter/style.json?key=${MAPTILER_KEY}` : null;
+export interface HeroMarker { lat: number; lon: number; aqi: number; name: string }
 
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "nc5sshnRlIfoqUGKBQkq";
+// Satellite + labels — a real map you recognise, not an abstract slab.
+const HERO_STYLE = MAPTILER_KEY ? `https://api.maptiler.com/maps/hybrid/style.json?key=${MAPTILER_KEY}` : null;
+
+// keyless raster satellite fallback (Esri World Imagery) if no MapTiler key
 const STYLE: StyleSpecification = {
   version: 8,
   sources: {
-    carto: {
+    esri: {
       type: "raster",
-      tiles: [
-        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-      ],
+      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
       tileSize: 256,
-      attribution: "© OpenStreetMap, © CARTO",
+      attribution: "© Esri, Maxar, Earthstar Geographics",
     },
   },
   layers: [
-    { id: "bg", type: "background", paint: { "background-color": "#08090A" } },
-    { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 0.8, "raster-saturation": -0.4, "raster-contrast": 0.05 } },
+    { id: "bg", type: "background", paint: { "background-color": "#0a0d12" } },
+    { id: "esri", type: "raster", source: "esri", paint: { "raster-opacity": 1, "raster-saturation": -0.1 } },
   ],
 };
 
-const EXTRUSION_COLOR: ExpressionSpecification = [
-  "interpolate", ["linear"], ["get", "aqi"],
-  0, "#55A84F", 50, "#8FBF4A", 100, "#C9D24A", 150, "#FFF833",
-  200, "#F8C238", 250, "#F29C33", 300, "#ED6B30", 400, "#E93F33", 500, "#AF2D24",
+// Smooth AQI heat cloud (density ramp through the CPCB band colours).
+const HEAT_COLOR: ExpressionSpecification = [
+  "interpolate", ["linear"], ["heatmap-density"],
+  0, "rgba(0,0,0,0)",
+  0.15, "rgba(85,168,79,0.45)",
+  0.35, "rgba(255,248,51,0.55)",
+  0.55, "rgba(242,156,51,0.68)",
+  0.78, "rgba(233,63,51,0.8)",
+  1.0, "rgba(175,45,36,0.9)",
 ];
 
-// shrink each cell to ~68% of its footprint so the columns read as distinct
-// towers (a 3D skyline) instead of fusing into one flat sheet.
-const GAP = 0.68;
-
-function cellPolygon(lat: number, lon: number, stepKm: number, shrink = GAP) {
-  const dLat = (stepKm / 111 / 2) * shrink;
-  const dLon = (stepKm / (111 * Math.cos((lat * Math.PI) / 180)) / 2) * shrink;
-  return [[
-    [lon - dLon, lat - dLat], [lon + dLon, lat - dLat],
-    [lon + dLon, lat + dLat], [lon - dLon, lat + dLat], [lon - dLon, lat - dLat],
-  ]];
-}
-
-function fc(cells: GridCell[], stepKm: number): GeoJSON.FeatureCollection {
-  return {
-    type: "FeatureCollection",
-    features: cells.map((c) => ({
-      type: "Feature",
-      // taller, more dramatic skyline; floor keeps clean-air cells visible as tiles
-      properties: { aqi: c.aqi, height: Math.min(Math.max((c.aqi - 20) * 9, 60), 4200) },
-      geometry: { type: "Polygon", coordinates: cellPolygon(c.lat, c.lon, stepKm) },
-    })),
-  };
-}
-
-/** Flat full-footprint tiles for the ground-glow wash beneath the towers. */
-function fcGlow(cells: GridCell[], stepKm: number): GeoJSON.FeatureCollection {
+function pointsFC(cells: GridCell[]): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: cells.map((c) => ({
       type: "Feature",
       properties: { aqi: c.aqi },
-      geometry: { type: "Polygon", coordinates: cellPolygon(c.lat, c.lon, stepKm, 1) },
+      geometry: { type: "Point", coordinates: [c.lon, c.lat] },
     })),
   };
 }
@@ -99,10 +79,12 @@ function HeroFallback({ cells }: { cells: GridCell[] }) {
   );
 }
 
-/** The product as hero: a slowly self-orbiting 3D AQI skyline; SVG fallback if WebGL is unavailable. */
-export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; center: LatLon; stepKm: number }) {
+/** Hero: a real satellite map with a live AQI heat cloud + numbered station dots, slowly orbiting. */
+export default function HeroMap({ cells, center, stepKm: _stepKm, markers = [] }:
+  { cells: GridCell[]; center: LatLon; stepKm: number; markers?: HeroMarker[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const markerObjsRef = useRef<maplibregl.Marker[]>([]);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -116,9 +98,9 @@ export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; 
         container: containerRef.current,
         style: HERO_STYLE ?? STYLE,
         center: [center.lon, center.lat],
-        zoom: 9.5,
-        pitch: 58,
-        bearing: -20,
+        zoom: 9.7,
+        pitch: 40,
+        bearing: -18,
         interactive: false,
         attributionControl: false,
       });
@@ -137,23 +119,27 @@ export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; 
     canvas.addEventListener("webglcontextlost", onLost, false);
 
     const onReady = () => {
-      if (!map.getSource("grid")) {
-        map.addSource("grid", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-        // soft ground glow — a flat full-footprint wash so the towers sit in a
-        // coloured pool of light instead of floating on bare basemap.
-        map.addSource("glow", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      // Dim the bright satellite so the AQI heat + dots pop and it suits the dark UI.
+      // (The dots are DOM overlays, so they stay crisp — only the imagery is dimmed.)
+      try {
+        for (const lyr of map.getStyle().layers ?? []) {
+          if (lyr.type === "raster") {
+            map.setPaintProperty(lyr.id, "raster-brightness-max", 0.7);
+            map.setPaintProperty(lyr.id, "raster-saturation", -0.15);
+            map.setPaintProperty(lyr.id, "raster-contrast", -0.05);
+          }
+        }
+      } catch { /* style may have no raster layers */ }
+      if (!map.getSource("cells")) {
+        map.addSource("cells", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
         map.addLayer({
-          id: "grid-glow", type: "fill", source: "glow",
-          paint: { "fill-color": EXTRUSION_COLOR, "fill-opacity": 0.16 },
-        });
-        map.addLayer({
-          id: "grid-3d", type: "fill-extrusion", source: "grid",
+          id: "aqi-heat", type: "heatmap", source: "cells",
           paint: {
-            "fill-extrusion-color": EXTRUSION_COLOR,
-            "fill-extrusion-height": ["get", "height"],
-            "fill-extrusion-base": 0,
-            "fill-extrusion-opacity": 0.92,
-            "fill-extrusion-vertical-gradient": true,
+            "heatmap-weight": ["interpolate", ["linear"], ["get", "aqi"], 0, 0.05, 200, 0.5, 500, 1],
+            "heatmap-intensity": 1.1,
+            "heatmap-radius": 40,
+            "heatmap-opacity": 0.72,
+            "heatmap-color": HEAT_COLOR,
           },
         });
       }
@@ -166,13 +152,13 @@ export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; 
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(containerRef.current);
 
-    // slow self-orbit (~2.4°/s), guarded so a bad frame can't throw uncaught
+    // gentle self-orbit so it reads as a live 3D map (guarded; respects reduced-motion)
     let raf = 0;
-    let bearing = -22;
+    let bearing = -18;
     const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     const spin = () => {
       try {
-        bearing = (bearing + 0.04) % 360;
+        bearing = (bearing + 0.03) % 360;
         map.setBearing(bearing);
         raf = requestAnimationFrame(spin);
       } catch {
@@ -185,6 +171,8 @@ export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; 
       cancelAnimationFrame(raf);
       ro.disconnect();
       canvas.removeEventListener("webglcontextlost", onLost);
+      markerObjsRef.current.forEach((m) => m.remove());
+      markerObjsRef.current = [];
       map.remove();
       mapRef.current = null;
       setReady(false);
@@ -192,13 +180,39 @@ export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [failed]);
 
+  // heat cloud data
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
-    (map.getSource("grid") as maplibregl.GeoJSONSource | undefined)?.setData(fc(cells, stepKm));
-    (map.getSource("glow") as maplibregl.GeoJSONSource | undefined)?.setData(fcGlow(cells, stepKm));
-  }, [ready, cells, stepKm]);
+    (map.getSource("cells") as maplibregl.GeoJSONSource | undefined)?.setData(pointsFC(cells));
+  }, [ready, cells]);
+
+  // AQI station dots — the worst ~10 wards as numbered pills (the "points of AQI")
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    markerObjsRef.current.forEach((m) => m.remove());
+    markerObjsRef.current = [];
+    const top = [...markers].sort((a, b) => b.aqi - a.aqi).slice(0, 10);
+    for (const mk of top) {
+      const color = mk.aqi ? aqiColor(mk.aqi) : "#3A3B40";
+      const wrap = document.createElement("div");
+      const el = document.createElement("div");
+      el.textContent = String(mk.aqi);
+      el.title = `${mk.name}: AQI ${mk.aqi}`;
+      el.style.cssText =
+        `display:grid;place-items:center;width:30px;height:30px;border-radius:9999px;` +
+        `background:${color};color:${textOn(color)};` +
+        `font:700 12px var(--font-mono),ui-monospace,monospace;font-variant-numeric:tabular-nums;` +
+        `border:2px solid rgba(255,255,255,.92);` +
+        `box-shadow:0 2px 8px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.35);`;
+      if (mk.aqi >= 401) el.classList.add("vn-pulse");
+      wrap.appendChild(el);
+      const marker = new maplibregl.Marker({ element: wrap }).setLngLat([mk.lon, mk.lat]).addTo(map);
+      markerObjsRef.current.push(marker);
+    }
+  }, [ready, markers]);
 
   if (failed) return <HeroFallback cells={cells} />;
-  return <div ref={containerRef} className="h-full w-full" role="img" aria-label="Live 3D AQI skyline — column height shows pollution level" />;
+  return <div ref={containerRef} className="h-full w-full" role="img" aria-label="Live satellite air-quality map — heat cloud and station AQI dots" />;
 }
