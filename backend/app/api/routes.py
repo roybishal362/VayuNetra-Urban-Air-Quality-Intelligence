@@ -21,7 +21,7 @@ from app.services.health_cost import city_health_cost
 from app.services.compliance import city_compliance, intervention_ledger
 from app.services.downscale import factor_at, scale_forecast
 from app.services.intelligence_service import compare_cities, get_city_intelligence, get_model
-from app.services.scenario import build_history, simulate_reduction
+from app.services.scenario import build_history, city_whatif, simulate_reduction
 
 log = get_logger("vayunetra.api.routes")
 router = APIRouter(prefix="/api")
@@ -159,3 +159,15 @@ def compliance():
 def interventions():
     """Honest ledger of real air-quality interventions and what they actually did to AQI."""
     return intervention_ledger()
+
+
+@router.get("/cities/{cid}/whatif", tags=["intelligence"])
+def whatif(cid: str, vehicular: float = 0.0, industrial: float = 0.0,
+           dust_construction: float = 0.0, biomass_burning: float = 0.0, secondary: float = 0.0):
+    """City-wide what-if: cut sources by these fractions → new city AQI + people protected."""
+    city = _require_city(cid)
+    intel = get_city_intelligence(cid)
+    reductions = {"vehicular": vehicular, "industrial": industrial,
+                  "dust_construction": dust_construction, "biomass_burning": biomass_burning,
+                  "secondary": secondary}
+    return city_whatif(city, intel.attributions, reductions)

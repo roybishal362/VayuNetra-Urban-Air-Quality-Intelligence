@@ -35,6 +35,39 @@ def simulate_reduction(attr: ZoneAttribution, source: str, reduction: float) -> 
     )
 
 
+def city_whatif(city: City, attributions: list[ZoneAttribution], reductions: dict[str, float]) -> dict:
+    """City-wide what-if: cut each source by a fraction, recompute every ward, and report the
+    city-average AQI drop + how many people move OUT of harmful (Poor+) air. Grounded in the
+    real sources (e.g. an industrial cut = cleaning the registered plants near each ward)."""
+    zmap = {z.id: z for z in city.zones}
+    o_aqis, n_aqis, o_exposed, n_exposed, removed_by = [], [], 0, 0, {}
+    for a in attributions:
+        pop = (zmap.get(a.zone_id).population or 0) if zmap.get(a.zone_id) else 0
+        removed = 0.0
+        for c in a.contributions:
+            r = max(0.0, min(1.0, reductions.get(c.source, 0.0)))
+            cut = c.concentration * r
+            removed += cut
+            removed_by[c.source] = removed_by.get(c.source, 0.0) + cut * pop
+        new_pm = max(0.0, a.pm25 - removed)
+        o = compute_aqi(Reading(ts=a.ts, pm25=a.pm25))
+        n = compute_aqi(Reading(ts=a.ts, pm25=new_pm))
+        o_aqi, n_aqi = (o.aqi if o else 0), (n.aqi if n else 0)
+        o_aqis.append(o_aqi); n_aqis.append(n_aqi)
+        if o_aqi > 200:
+            o_exposed += pop
+        if n_aqi > 200:
+            n_exposed += pop
+    n = len(o_aqis) or 1
+    o_avg, n_avg = round(sum(o_aqis) / n), round(sum(n_aqis) / n)
+    return {
+        "city_id": city.id,
+        "original_avg_aqi": o_avg, "new_avg_aqi": n_avg, "delta_aqi": n_avg - o_avg,
+        "people_protected": max(0, o_exposed - n_exposed),
+        "reductions": {k: round(v, 2) for k, v in reductions.items() if v},
+    }
+
+
 def build_history(city: City, obs: CityObservations, zone_id: str, hours: int = 48) -> ZoneHistory:
     z = next((zz for zz in city.zones if zz.id == zone_id), None)
     zs = obs.zone(zone_id)
