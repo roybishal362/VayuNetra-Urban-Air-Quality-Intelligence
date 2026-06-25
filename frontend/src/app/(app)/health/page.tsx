@@ -40,7 +40,7 @@ export default function HealthPage() {
   const h = intel.health;
   const group = GROUPS.find((g) => g.id === groupId) ?? GROUPS[0];
   const sel = (zoneId && rows.find((r) => r.id === zoneId)) || rows[0];
-  const advice = sel ? personalAdvice(sel.aqi, group.mult) : personalAdvice(0, 1);
+  const advice = sel ? personalAdvice(sel.aqi, group) : personalAdvice(0, GROUPS[0]);
   const vulnWards = rows.filter((r) => r.aqi > 200 && r.vuln > 0);
 
   return (
@@ -75,7 +75,7 @@ export default function HealthPage() {
                   </button>
                 ))}
               </div>
-              <div className="mt-2 text-[11px] text-text-low">{group.hint}</div>
+              <div className="mt-2 text-[12px] leading-relaxed" style={{ color: advice.color }}>{advice.summary}</div>
               <div className="mt-3 text-[11px] text-text-mid">Area</div>
               <select value={sel?.id} onChange={(e) => setZoneId(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-white/[0.08] bg-vn-700/60 px-2.5 py-1.5 text-sm text-text-hi outline-none focus:border-white/20">
