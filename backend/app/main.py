@@ -41,6 +41,11 @@ async def lifespan(app: FastAPI):
         settings.llm_enabled,
     )
     threading.Thread(target=_warm_cache, daemon=True).start()
+    try:
+        from app.services.telegram_bot import start as start_telegram
+        start_telegram()
+    except Exception as exc:
+        log.warning("telegram bot failed to start: %s", exc)
     yield
     log.info("Shutting down %s", settings.app_name)
 

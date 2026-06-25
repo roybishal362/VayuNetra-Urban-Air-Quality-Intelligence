@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-sonnet-4-6"
     openaq_api_key: str | None = None
     firms_map_key: str | None = None
+    # Citizen-alert delivery (Telegram bot). Enables the live push-advisory channel.
+    telegram_bot_token: str | None = None
 
     # --- behaviour ---
     allow_live_fetch: bool = True
