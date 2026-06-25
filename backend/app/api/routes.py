@@ -16,6 +16,7 @@ from app.schemas.intelligence import CityComparison, CityIntelligence
 from app.schemas.scenario import SimulationResult, ZoneHistory
 from app.services import grid as grid_service
 from app.services.attribution_validation import validate as validate_attribution
+from app.services.enforcement_roi import optimize as roi_optimize
 from app.services.downscale import factor_at, scale_forecast
 from app.services.intelligence_service import compare_cities, get_city_intelligence, get_model
 from app.services.scenario import build_history, simulate_reduction
@@ -120,3 +121,11 @@ def attribution_validation(cid: str):
     if result is None:
         raise HTTPException(status_code=404, detail=f"No reference apportionment for '{cid}'")
     return result
+
+
+@router.get("/cities/{cid}/enforcement/roi", tags=["intelligence"])
+def enforcement_roi(cid: str, inspectors: int = Query(3, ge=1, le=50)):
+    """Deploy N inspectors for maximum impact — which wards cover the most pollution burden."""
+    city = _require_city(cid)
+    intel = get_city_intelligence(cid)
+    return roi_optimize(city, intel.attributions, inspectors)
