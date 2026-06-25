@@ -51,6 +51,12 @@ export interface MatchedSource {
   distance_km: number; bearing: string; upwind: boolean; detail: string;
 }
 
+export interface EnforcementRoi {
+  city_id: string; inspectors: number; total_wards: number;
+  covered_pct: number; population_covered: number;
+  selected: { zone_id: string; zone_name: string; dominant_label: string; aqi: number; population: number; burden_share: number }[];
+}
+
 export interface EnforcementItem {
   rank: number; zone_id: string; zone_name: string; priority: number;
   dominant_source: string; dominant_label: string; current_aqi: number; forecast_aqi_24h: number;

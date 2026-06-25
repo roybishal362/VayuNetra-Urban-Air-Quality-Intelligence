@@ -1,10 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import type { City, EnforcementItem } from "@/lib/types";
+import type { City, EnforcementItem, EnforcementRoi } from "@/lib/types";
 import { trendArrow } from "@/lib/aqi";
 import { sourceColor } from "@/lib/sources";
+
+function RoiPlanner({ city }: { city: City }) {
+  const [n, setN] = useState(3);
+  const [roi, setRoi] = useState<EnforcementRoi | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.enforcementRoi(city.id, n).then((d) => !cancelled && setRoi(d)).catch(() => {});
+    return () => { cancelled = true; };
+  }, [city.id, n]);
+
+  return (
+    <div className="card p-3">
+      <div className="eyebrow mb-1">Deploy for maximum impact</div>
+      <div className="flex items-center gap-3">
+        <input type="range" min={1} max={Math.min(12, roi?.total_wards ?? 12)} value={n}
+          onChange={(e) => setN(Number(e.target.value))}
+          className="flex-1 accent-[#55A84F]" aria-label="number of inspectors" />
+        <span className="w-24 text-right font-mono text-xs text-text-mid">{n} inspector{n > 1 ? "s" : ""}</span>
+      </div>
+      {roi && (
+        <div className="mt-2 flex items-end gap-2">
+          <span className="font-display text-3xl font-semibold tabular-nums text-[#55A84F]">{roi.covered_pct}%</span>
+          <span className="pb-1 text-[11px] leading-tight text-text-mid">
+            of the city&apos;s pollution burden covered<br />
+            ≈ {roi.population_covered.toLocaleString()} people protected
+          </span>
+        </div>
+      )}
+      {roi && (
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {roi.selected.map((s) => (
+            <span key={s.zone_id} className="chip border border-white/[0.08] bg-vn-800/60 text-[10px] text-text">
+              {s.zone_name} · {s.burden_share}%
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="mt-1 font-mono text-[9px] text-text-low">burden = people × severity × source-actionability</div>
+    </div>
+  );
+}
 
 function trendColor(t: string) {
   return t === "rising" ? "#E93F33" : t === "falling" ? "#55A84F" : "#94a3b8";
@@ -98,6 +140,7 @@ export default function EnforcementPanel({
   if (!items.length) return <div className="p-4 text-sm text-slate-500">No enforcement priorities.</div>;
   return (
     <div className="space-y-2">
+      <RoiPlanner city={city} />
       <div className="px-1 text-xs text-slate-400">
         Ranked by severity, forecast trend, source actionability and population exposure.
       </div>
