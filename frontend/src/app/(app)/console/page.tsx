@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Wind } from "lucide-react";
 import { api } from "@/lib/api";
 import { useCity } from "@/lib/cityStore";
 import type { GridResponse } from "@/lib/types";
@@ -38,6 +38,7 @@ export default function CommandCenter() {
   const [showIndustry, setShowIndustry] = useState(false);
   const [basemap, setBasemap] = useState<Basemap>("dark");
   const [is3D, setIs3D] = useState(true);
+  const [showWind, setShowWind] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const TLAPSE = useMemo<TimeValue[]>(() => [
@@ -144,6 +145,11 @@ export default function CommandCenter() {
                 </button>
               ))}
             </div>
+            <button onClick={() => setShowWind((w) => !w)} title="Toggle the live wind-flow animation"
+              className={clsx("inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors duration-fast",
+                showWind ? "border-white/[0.16] bg-white/[0.08] text-text-hi" : "border-white/[0.06] bg-vn-850/60 text-text-mid hover:text-text-hi")}>
+              <Wind size={12} /> Wind
+            </button>
           </div>
         </div>
         <div className="relative min-h-0 flex-1">
@@ -157,7 +163,7 @@ export default function CommandCenter() {
             showIndustry={showIndustry}
             basemap={basemap}
             is3D={is3D}
-            wind={wind}
+            wind={showWind ? wind : null}
           />
           {loading && (
             <div className="absolute inset-0 z-20 grid place-items-center bg-vn-base/40 backdrop-blur-sm">

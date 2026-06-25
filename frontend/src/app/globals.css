@@ -182,6 +182,11 @@ body {
 }
 .vn-breathe { animation: vn-breathe 2s ease-in-out infinite; }
 
+/* Print: preserve dark theme + AQI colours when saving the brief as PDF. */
+@media print {
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
 /* Respect reduced-motion: kill animation but keep AQI color updates (handled in JS). */
 @media (prefers-reduced-motion: reduce) {
   *,

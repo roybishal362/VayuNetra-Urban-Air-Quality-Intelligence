@@ -29,7 +29,7 @@ export default function Topbar() {
   const severe = intel?.alerts?.filter((a) => a.level === "severe").length ?? 0;
 
   return (
-    <header className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-white/[0.06] bg-vn-900/70 px-4 backdrop-blur-xl">
+    <header className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-white/[0.06] bg-vn-900/70 px-4 backdrop-blur-xl print:hidden">
       <div className="flex items-center gap-0.5 overflow-x-auto rounded-lg border border-white/[0.06] bg-vn-850/60 p-1">
         {cities.map((c) => (
           <button

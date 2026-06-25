@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import clsx from "clsx";
 import { api } from "@/lib/api";
 import type { CityComparison, CityIntelligence } from "@/lib/types";
@@ -86,6 +87,9 @@ export default function OverviewPanel({
         <p className="text-sm leading-relaxed text-text">
           {brief ? brief.briefing : briefErr ? "Briefing unavailable right now — showing metrics only." : "Generating briefing…"}
         </p>
+        <Link href="/brief" className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-text-mid transition-colors hover:text-text-hi">
+          Open printable situation brief →
+        </Link>
       </div>
 
       {h && (
