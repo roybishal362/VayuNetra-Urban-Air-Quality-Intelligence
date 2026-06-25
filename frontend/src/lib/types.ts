@@ -36,6 +36,16 @@ export interface AdvisoryItem {
   languages: Record<string, string>; generated_by: string;
 }
 
+export interface AttributionValidationRow {
+  source: string; label: string; color: string;
+  ours: number; reference: number; low: number; high: number; within: boolean;
+}
+export interface AttributionValidation {
+  city_id: string; citation: string; indicative: boolean;
+  agreement_pct: number; within_range: number; n_sources: number;
+  mean_abs_deviation_pp: number; rows: AttributionValidationRow[];
+}
+
 export interface MatchedSource {
   name: string; kind: string; lat: number; lon: number;
   distance_km: number; bearing: string; upwind: boolean; detail: string;

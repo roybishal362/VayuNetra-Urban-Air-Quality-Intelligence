@@ -2,6 +2,7 @@
 
 import { useCity } from "@/lib/cityStore";
 import MetricsPanel from "@/components/MetricsPanel";
+import AttributionValidationCard from "@/components/AttributionValidationCard";
 import StateMsg from "@/components/StateMsg";
 
 export default function ValidationPage() {
@@ -15,10 +16,11 @@ export default function ValidationPage() {
         <header>
           <h1 className="font-display text-2xl font-bold text-slate-100">Model validation — {city.name}</h1>
           <p className="mt-1 text-sm text-slate-400">
-            Held-out evaluation: skill vs persistence, predicted-vs-actual proof, and uncertainty calibration.
-            A separate model is trained and validated per city.
+            Held-out evaluation: forecast skill vs persistence, predicted-vs-actual proof, uncertainty
+            calibration — and our source attribution checked against published receptor-model studies.
           </p>
         </header>
+        <AttributionValidationCard cityId={city.id} />
         <MetricsPanel intel={intel} />
       </div>
     </div>
