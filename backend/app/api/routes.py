@@ -18,6 +18,7 @@ from app.services import grid as grid_service
 from app.services.attribution_validation import validate as validate_attribution
 from app.services.enforcement_roi import optimize as roi_optimize
 from app.services.health_cost import city_health_cost
+from app.services.compliance import city_compliance, intervention_ledger
 from app.services.downscale import factor_at, scale_forecast
 from app.services.intelligence_service import compare_cities, get_city_intelligence, get_model
 from app.services.scenario import build_history, simulate_reduction
@@ -138,3 +139,23 @@ def health_cost(cid: str):
     city = _require_city(cid)
     intel = get_city_intelligence(cid)
     return city_health_cost(city, intel.attributions)
+
+
+@router.get("/compliance", tags=["cities"])
+def compliance():
+    """Compliance scorecard for every city — live PM2.5 vs CPCB NAAQS + WHO guideline."""
+    out = []
+    for c in list_cities():
+        try:
+            intel = get_city_intelligence(c.id)
+            out.append(city_compliance(get_city(c.id), intel.attributions))
+        except Exception as exc:
+            log.warning("compliance failed for %s: %s", c.id, exc)
+    out.sort(key=lambda x: x["avg_pm25"], reverse=True)
+    return out
+
+
+@router.get("/interventions", tags=["intelligence"])
+def interventions():
+    """Honest ledger of real air-quality interventions and what they actually did to AQI."""
+    return intervention_ledger()
