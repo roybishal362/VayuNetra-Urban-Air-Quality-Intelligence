@@ -37,8 +37,13 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-sonnet-4-6"
     openaq_api_key: str | None = None
     firms_map_key: str | None = None
-    # Citizen-alert delivery (Telegram bot). Enables the live push-advisory channel.
+    # Citizen-alert delivery. Telegram is free/live; SMS + WhatsApp go live when a gateway is set.
     telegram_bot_token: str | None = None
+    # Twilio (global SMS + WhatsApp). For India SMS you also need a DLT-registered sender.
+    twilio_account_sid: str | None = None
+    twilio_auth_token: str | None = None
+    twilio_from_sms: str | None = None        # e.g. +1XXXXXXXXXX  (or DLT sender for India)
+    twilio_from_whatsapp: str | None = None    # e.g. whatsapp:+14155238886
 
     # --- behaviour ---
     allow_live_fetch: bool = True
