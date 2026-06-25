@@ -66,6 +66,23 @@ export default function AttributionValidationCard({ cityId }: { cityId: string }
         </tbody>
       </table>
 
+      {v.inventory && (
+        <div className="mt-3 rounded-lg border border-white/[0.06] bg-vn-850/40 p-2">
+          <div className="eyebrow mb-1">Also vs official emission inventory</div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px] sm:grid-cols-4">
+            {v.inventory.rows.map((r) => (
+              <div key={r.source} className="flex items-center justify-between">
+                <span className="truncate text-text-mid">{r.label.split(" / ")[0]}</span>
+                <span className="font-mono text-text"><span className="text-text-hi">{r.ours}%</span> <span className="text-text-low">/ {r.inventory}%</span></span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-1 font-mono text-[9px] leading-relaxed text-text-low">
+            ours / {v.inventory.citation}. {v.inventory.caveat}
+          </p>
+        </div>
+      )}
+
       <p className="mt-2 font-mono text-[10px] leading-relaxed text-text-low">
         Honest check: our city-average split vs peer-reviewed / government receptor studies.
         Reference: {v.citation}. We report the real agreement — gaps (e.g. off-season biomass) shown openly.

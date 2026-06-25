@@ -40,10 +40,19 @@ export interface AttributionValidationRow {
   source: string; label: string; color: string;
   ours: number; reference: number; low: number; high: number; within: boolean;
 }
+export interface InventoryComparison {
+  citation: string; caveat: string;
+  rows: { source: string; label: string; ours: number; inventory: number }[];
+}
 export interface AttributionValidation {
   city_id: string; citation: string; indicative: boolean;
   agreement_pct: number; within_range: number; n_sources: number;
   mean_abs_deviation_pp: number; rows: AttributionValidationRow[];
+  inventory?: InventoryComparison | null;
+}
+export interface LockdownCheck {
+  city_id: string; scenario: string; predicted_drop_pct: number;
+  measured_drop_pct: number; verdict: string; source: string;
 }
 
 export interface MatchedSource {

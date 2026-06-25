@@ -3,6 +3,7 @@
 import { useCity } from "@/lib/cityStore";
 import MetricsPanel from "@/components/MetricsPanel";
 import AttributionValidationCard from "@/components/AttributionValidationCard";
+import LockdownCard from "@/components/LockdownCard";
 import StateMsg from "@/components/StateMsg";
 
 export default function ValidationPage() {
@@ -21,6 +22,7 @@ export default function ValidationPage() {
           </p>
         </header>
         <AttributionValidationCard cityId={city.id} />
+        <LockdownCard cityId={city.id} />
         <MetricsPanel intel={intel} />
       </div>
     </div>
