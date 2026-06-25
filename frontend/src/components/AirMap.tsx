@@ -57,6 +57,27 @@ interface Props {
   basemap: Basemap;
   is3D: boolean;
   wind?: { dir: number; speed: number } | null;
+  /** Per-zone AQI to display on the markers — time/horizon-aware (current vs forecast). */
+  zoneAqi?: Record<string, number> | null;
+}
+
+// Paint (or repaint) a station marker's number, colour, ring and pulse for a given AQI.
+// Kept separate so the creation effect and the horizon-update effect stay in sync.
+function paintMarker(el: HTMLButtonElement, name: string, aqi: number, selected: boolean) {
+  const color = aqi ? aqiColor(aqi) : "#3A3B40";
+  el.textContent = aqi ? String(aqi) : "–";
+  el.setAttribute("aria-label", `${name}: AQI ${aqi || "n/a"}`);
+  el.setAttribute("aria-pressed", String(selected));
+  // NOTE: never add a `transition` or set `transform` here — MapLibre owns the marker's
+  // transform for positioning, so either makes the marker "fly" from the top-left.
+  el.style.cssText =
+    `appearance:none;padding:0;display:grid;place-items:center;width:30px;height:30px;border-radius:9999px;` +
+    `background:${color};color:${textOn(color)};` +
+    `font:600 12px var(--font-mono),ui-monospace,monospace;font-variant-numeric:tabular-nums;` +
+    `border:2px solid ${selected ? "#F4F5F6" : "rgba(8,9,10,.72)"};` +
+    `box-shadow:0 1px 3px rgba(0,0,0,.5),0 0 0 1px rgba(0,0,0,.35)${selected ? ",0 0 0 4px rgba(244,245,246,.22)" : ""};` +
+    `cursor:pointer;`;
+  el.classList.toggle("vn-pulse", aqi >= 401);
 }
 
 function cellPolygon(lat: number, lon: number, stepKm: number) {
@@ -166,14 +187,18 @@ function addDataLayers(map: maplibregl.Map) {
 }
 
 export default function AirMap({
-  city, grid, attributions, selectedZoneId, onSelectZone, industrial, showIndustry, basemap, is3D, wind,
+  city, grid, attributions, selectedZoneId, onSelectZone, industrial, showIndustry, basemap, is3D, wind, zoneAqi,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const markerElsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
   const selectRef = useRef(onSelectZone);
   selectRef.current = onSelectZone;
   const gridRef = useRef(grid); gridRef.current = grid;
+  const zoneAqiRef = useRef(zoneAqi); zoneAqiRef.current = zoneAqi;
+  const attrRef = useRef(attributions); attrRef.current = attributions;
+  const selectedRef = useRef(selectedZoneId); selectedRef.current = selectedZoneId;
   const is3DRef = useRef(is3D); is3DRef.current = is3D;
   const indRef = useRef({ industrial, showIndustry }); indRef.current = { industrial, showIndustry };
 
@@ -288,36 +313,34 @@ export default function AirMap({
     if (!ready || !map) return;
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
+    markerElsRef.current.clear();
     const byId = new Map(attributions.map((a) => [a.zone_id, a]));
     for (const z of city.zones) {
       const a = byId.get(z.id);
-      const aqi = a?.aqi ?? 0;
-      const color = aqi ? aqiColor(aqi) : "#3A3B40";
-      const selected = z.id === selectedZoneId;
+      const aqi = zoneAqiRef.current?.[z.id] ?? a?.aqi ?? 0;
       const el = document.createElement("button");
       el.type = "button";
       el.className = "vn-marker";
-      el.setAttribute("aria-label", `${z.name}: AQI ${aqi || "n/a"}`);
-      el.setAttribute("aria-pressed", String(selected));
-      el.textContent = aqi ? String(aqi) : "–";
-      // NOTE: do NOT put a `transition` on this element or set its `transform` directly —
-      // MapLibre positions the marker via `transform`, so a transition makes it animate
-      // ("flow") from the top-left on every re-render, and setting transform clobbers the
-      // position. Hover feedback is done with box-shadow (a CSS class) instead.
-      el.style.cssText =
-        `appearance:none;padding:0;display:grid;place-items:center;width:30px;height:30px;border-radius:9999px;` +
-        `background:${color};color:${textOn(color)};` +
-        `font:600 12px var(--font-mono),ui-monospace,monospace;font-variant-numeric:tabular-nums;` +
-        `border:2px solid ${selected ? "#F4F5F6" : "rgba(8,9,10,.72)"};` +
-        `box-shadow:0 1px 3px rgba(0,0,0,.5),0 0 0 1px rgba(0,0,0,.35)${selected ? ",0 0 0 4px rgba(244,245,246,.22)" : ""};` +
-        `cursor:pointer;`;
-      if (aqi >= 401) el.classList.add("vn-pulse");
       el.onclick = (e) => { e.stopPropagation(); selectRef.current(z.id); };
+      paintMarker(el, z.name, aqi, z.id === selectedZoneId);
       const marker = new maplibregl.Marker({ element: el }).setLngLat([z.center.lon, z.center.lat]).addTo(map);
       markersRef.current.push(marker);
+      markerElsRef.current.set(z.id, el);
     }
     deoverlap(map, markersRef.current);
   }, [ready, city, attributions, selectedZoneId]);
+
+  // ── markers: repaint in place when the time/horizon changes (no rebuild → no flicker) ──
+  useEffect(() => {
+    if (!ready || !mapRef.current) return;
+    const byId = new Map(attrRef.current.map((a) => [a.zone_id, a]));
+    for (const z of city.zones) {
+      const el = markerElsRef.current.get(z.id);
+      if (!el) continue;
+      const aqi = zoneAqi?.[z.id] ?? byId.get(z.id)?.aqi ?? 0;
+      paintMarker(el, z.name, aqi, z.id === selectedRef.current);
+    }
+  }, [ready, zoneAqi, city]);
 
   // ── fit to city ─────────────────────────────────────────────────────
   useEffect(() => {

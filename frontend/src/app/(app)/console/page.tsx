@@ -48,6 +48,25 @@ export default function CommandCenter() {
   const grid = gridCache[gridKey(time)] ?? null;
   const cacheReady = TLAPSE.every((t) => gridCache[gridKey(t)]);
 
+  // per-zone AQI for the station markers, AWARE of the selected time:
+  //   • "current"  → the live observed AQI (attribution)
+  //   • "forecast" → each zone's predicted AQI at the nearest horizon
+  // Without this the markers froze on the live value and the time-lapse looked static.
+  const zoneAqi = useMemo<Record<string, number>>(() => {
+    const m: Record<string, number> = {};
+    if (!intel) return m;
+    if (time.layer === "forecast") {
+      for (const f of intel.forecasts) {
+        if (!f.points?.length) continue;
+        const pt = f.points.reduce((b, c) =>
+          Math.abs(c.horizon_h - time.horizon) < Math.abs(b.horizon_h - time.horizon) ? c : b);
+        m[f.zone_id] = pt.aqi;
+      }
+    }
+    for (const a of intel.attributions) if (m[a.zone_id] == null) m[a.zone_id] = a.aqi;
+    return m;
+  }, [intel, time]);
+
   // city wind = mean speed + circular-mean direction across wards (for the wind animation)
   const wind = useMemo(() => {
     const a = (intel?.attributions ?? []).filter((x) => x.wind_dir != null);
@@ -164,6 +183,7 @@ export default function CommandCenter() {
             basemap={basemap}
             is3D={is3D}
             wind={showWind ? wind : null}
+            zoneAqi={zoneAqi}
           />
           {loading && (
             <div className="absolute inset-0 z-20 grid place-items-center bg-vn-base/40 backdrop-blur-sm">
