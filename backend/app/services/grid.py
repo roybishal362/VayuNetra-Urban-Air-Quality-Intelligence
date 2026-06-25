@@ -14,7 +14,8 @@ from app.schemas.grid import GridCell, GridResponse
 from app.schemas.intelligence import CityIntelligence
 from app.services.downscale import factors_for
 
-_MAX_CELLS = 4000  # safety cap so a tiny step never explodes the payload
+_MAX_CELLS = 4000     # safety cap so a tiny step never explodes the payload
+_HYPERLOCAL_KM = 1.0  # target heat-grid resolution (sharpened by land-use regression)
 
 
 def _idw(lat: float, lon: float, samples: list[tuple[float, float, float]], power: float = 2.0) -> float:
@@ -53,11 +54,15 @@ def build_aqi_grid(city: City, intel: CityIntelligence, layer: str = "current",
     samples = _samples(city, intel, layer, horizon)
     bbox = city.bbox
     mid_lat = (bbox.min_lat + bbox.max_lat) / 2
-    dlat = city.grid_step_km / 111.0
-    dlon = city.grid_step_km / (111.0 * max(0.2, math.cos(math.radians(mid_lat))))
+    # Hyperlocal: render the heat field at ~1 km (finer than the ward spacing), letting the
+    # land-use-regression factors paint real sub-ward variation. Capped at _MAX_CELLS for safety.
+    res_km = min(city.grid_step_km, _HYPERLOCAL_KM)
+    dlat = res_km / 111.0
+    dlon = res_km / (111.0 * max(0.2, math.cos(math.radians(mid_lat))))
 
     # widen step if the grid would exceed the cap
     n_est = ((bbox.max_lat - bbox.min_lat) / dlat + 1) * ((bbox.max_lon - bbox.min_lon) / dlon + 1)
+    scale = 1.0
     if n_est > _MAX_CELLS:
         scale = math.sqrt(n_est / _MAX_CELLS)
         dlat *= scale
@@ -84,4 +89,4 @@ def build_aqi_grid(city: City, intel: CityIntelligence, layer: str = "current",
             cells.append(GridCell(lat=clat, lon=clon, aqi=res.aqi, category=res.category, color=res.color))
 
     return GridResponse(city_id=city.id, layer=layer, horizon_h=horizon,
-                        step_km=round(city.grid_step_km, 2), now_ts=intel.now_ts, cells=cells)
+                        step_km=round(res_km * scale, 2), now_ts=intel.now_ts, cells=cells)
