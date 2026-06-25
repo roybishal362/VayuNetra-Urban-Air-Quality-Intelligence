@@ -4,6 +4,7 @@ assembles a cached CityIntelligence bundle. This is the multi-agent core of Vayu
 from __future__ import annotations
 
 import threading
+import time
 from datetime import datetime
 
 from app.agents.advisory import build_advisory
@@ -26,7 +27,11 @@ log = get_logger("vayunetra.intel")
 BUNDLE_HORIZONS = [6, 12, 24, 48, 72]
 ADVISORY_TOP = 6
 
-_MEM: dict[str, CityIntelligence] = {}
+# Serve a cached bundle for up to TTL, then refresh it from live data in the background
+# (stale-while-revalidate): requests stay instant, the data keeps moving with reality.
+_TTL_SECONDS = 600
+_MEM: dict[str, tuple[CityIntelligence, float]] = {}   # city_id -> (intel, built_at_epoch)
+_REFRESHING: set[str] = set()
 _LOCK = threading.RLock()
 
 
@@ -64,7 +69,7 @@ def _summary(city: City, attributions, enforcement, metrics: ForecastMetrics | N
     return txt
 
 
-def build_city_intelligence(city_id: str, mode: str = "snapshot") -> CityIntelligence:
+def build_city_intelligence(city_id: str, mode: str = "auto") -> CityIntelligence:
     city = get_city(city_id)
     if city is None:
         raise KeyError(city_id)
@@ -103,17 +108,46 @@ def build_city_intelligence(city_id: str, mode: str = "snapshot") -> CityIntelli
     return intel
 
 
-def get_city_intelligence(city_id: str, mode: str = "snapshot", refresh: bool = False) -> CityIntelligence:
+def _kick_background_refresh(city_id: str, mode: str) -> None:
+    """Rebuild a city's bundle from live data in a daemon thread (de-duplicated)."""
     with _LOCK:
-        if not refresh and city_id in _MEM:
-            return _MEM[city_id]
-    intel = build_city_intelligence(city_id, mode)  # outside lock (slow work)
+        if city_id in _REFRESHING:
+            return
+        _REFRESHING.add(city_id)
+
+    def _work() -> None:
+        try:
+            intel = build_city_intelligence(city_id, mode)
+            with _LOCK:
+                _MEM[city_id] = (intel, time.time())
+            log.info("[%s] intelligence refreshed in background (src=%s, ts=%s)",
+                     city_id, intel.data_source, intel.now_ts)
+        except Exception as exc:
+            log.warning("[%s] background refresh failed: %s", city_id, exc)
+        finally:
+            with _LOCK:
+                _REFRESHING.discard(city_id)
+
+    threading.Thread(target=_work, daemon=True, name=f"refresh-{city_id}").start()
+
+
+def get_city_intelligence(city_id: str, mode: str = "auto", refresh: bool = False) -> CityIntelligence:
+    now = time.time()
     with _LOCK:
-        _MEM[city_id] = intel
+        entry = _MEM.get(city_id)
+    if entry is not None and not refresh:
+        intel, built_at = entry
+        if now - built_at < _TTL_SECONDS:
+            return intel                      # fresh → serve immediately
+        _kick_background_refresh(city_id, mode)  # stale → serve now, refresh behind the scenes
+        return intel
+    intel = build_city_intelligence(city_id, mode)  # cold or forced refresh (outside lock)
+    with _LOCK:
+        _MEM[city_id] = (intel, time.time())
     return intel
 
 
-def warm_cache(mode: str = "snapshot") -> None:
+def warm_cache(mode: str = "auto") -> None:
     for c in list_cities():
         try:
             get_city_intelligence(c.id, mode=mode)

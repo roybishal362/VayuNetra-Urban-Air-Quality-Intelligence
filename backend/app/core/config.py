@@ -26,7 +26,11 @@ class Settings(BaseSettings):
 
     # --- optional integrations (all degrade gracefully) ---
     # Primary LLM: Groq (OpenAI-compatible, fast + low-cost).
+    # Provide ONE key via GROQ_API_KEY, or several (different accounts) via GROQ_API_KEYS
+    # = "key1,key2,key3" to multiply the free-tier rate budget — the client rotates across
+    # them and fails over on 429.
     groq_api_key: str | None = None
+    groq_api_keys: str | None = None
     groq_model: str = "llama-3.3-70b-versatile"
     # Optional Anthropic fallback (used only if no Groq key).
     anthropic_api_key: str | None = None
@@ -44,8 +48,24 @@ class Settings(BaseSettings):
     cors_origin_regex: str | None = None
 
     @property
+    def groq_key_list(self) -> list[str]:
+        """All configured Groq keys (GROQ_API_KEYS comma-list + GROQ_API_KEY), de-duped."""
+        raw: list[str] = []
+        if self.groq_api_keys:
+            raw += self.groq_api_keys.split(",")
+        if self.groq_api_key:
+            raw.append(self.groq_api_key)
+        seen: set[str] = set()
+        out: list[str] = []
+        for k in (s.strip() for s in raw):
+            if k and k not in seen:
+                seen.add(k)
+                out.append(k)
+        return out
+
+    @property
     def llm_enabled(self) -> bool:
-        return bool(self.groq_api_key or self.anthropic_api_key)
+        return bool(self.groq_key_list or self.anthropic_api_key)
 
 
 settings = Settings()

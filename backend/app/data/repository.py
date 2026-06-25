@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.data import snapshot
 from app.data.sources import firms
-from app.data.sources.openmeteo import fetch_air_quality, fetch_weather
+from app.data.sources.openmeteo import fetch_air_quality_multi, fetch_weather_multi
 from app.data.sources.osm import fetch_landuse
 from app.domain.cities import get_city
 from app.schemas.city import City
@@ -19,7 +19,9 @@ log = get_logger("vayunetra.repo")
 
 DEFAULT_PAST_DAYS = 60
 DEFAULT_FORECAST_DAYS = 5
-CACHE_TTL_SECONDS = 3600
+# Open-Meteo (CAMS) publishes hourly; 30 min picks up a freshly-published hour promptly
+# without re-pulling data that hasn't changed.
+CACHE_TTL_SECONDS = 1800
 
 
 class CityNotFound(KeyError):
@@ -39,22 +41,35 @@ def _gather_fires(city: City, ref_time: datetime):
 
 
 def _fetch_live(city: City, past_days: int, forecast_days: int) -> CityObservations:
-    zones: list[ZoneSeries] = []
-    for z in city.zones:
-        aq = fetch_air_quality(z.center.lat, z.center.lon, past_days, forecast_days, city.timezone)
-        wx = fetch_weather(z.center.lat, z.center.lon, past_days, forecast_days, city.timezone)
-        zones.append(ZoneSeries(zone_id=z.id, readings=aq, weather=wx))
-        log.info("fetched %s: %d aq / %d wx rows", z.id, len(aq), len(wx))
+    # One air-quality + one weather call for ALL zones (Open-Meteo multi-coordinate),
+    # instead of 2 calls per zone. Order is preserved, so we zip by index.
+    coords = [(z.center.lat, z.center.lon) for z in city.zones]
+    aqs = fetch_air_quality_multi(coords, past_days, forecast_days, city.timezone)
+    wxs = fetch_weather_multi(coords, past_days, forecast_days, city.timezone)
+    zones: list[ZoneSeries] = [
+        ZoneSeries(zone_id=z.id, readings=aqs[i], weather=wxs[i])
+        for i, z in enumerate(city.zones)
+    ]
+    log.info("[%s] live: %d zones, %d aq rows/zone", city.id, len(zones),
+             len(zones[0].readings) if zones else 0)
+    if not zones or not zones[0].readings:
+        raise RuntimeError("live fetch returned no readings")  # → caller falls back to snapshot
 
     forecast_hours = forecast_days * 24
     grid = zones[0].readings
     now_ts = grid[-(forecast_hours + 1)].ts if len(grid) > forecast_hours else grid[-1].ts
     fires = _gather_fires(city, now_ts)
-    try:
-        landuse = fetch_landuse(city)
-    except Exception as exc:
-        log.warning("land-use fetch failed (%s); downscaling disabled", exc)
-        landuse = None
+    # Land-use (industrial areas, roads) is spatial and static — it does NOT change hour to
+    # hour. Reuse the committed snapshot's land-use instead of hammering rate-limited OSM on
+    # every live refresh; only hit OSM if we have no land-use cached at all.
+    snap = snapshot.load_snapshot(city.id)
+    landuse = snap.landuse if (snap and snap.landuse) else None
+    if landuse is None:
+        try:
+            landuse = fetch_landuse(city)
+        except Exception as exc:
+            log.warning("land-use fetch failed (%s); downscaling disabled", exc)
+            landuse = None
     return CityObservations(
         city_id=city.id, generated_at=datetime.now(), now_ts=now_ts,
         forecast_hours=forecast_hours, source="live", zones=zones, fires=fires, landuse=landuse,

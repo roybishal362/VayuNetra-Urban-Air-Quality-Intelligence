@@ -60,3 +60,39 @@ def fetch_weather(lat: float, lon: float, past_days: int = 30,
         "wind_speed_unit": "ms",
     }
     return _parse_hourly(get_json(WX_URL, params), _WX_MAP, WeatherPoint)
+
+
+# ── multi-location (one HTTP call for every zone in a city) ──────────────────
+# Open-Meteo accepts comma-separated latitude/longitude and returns a JSON array of
+# location results in the SAME order. This collapses ~24 sequential calls per city
+# (12 zones × aq+wx) into 2 — the difference between an 80s live pull and a ~2s one.
+
+def _parse_multi(data, mapping: dict[str, str], model_cls, n: int):
+    locs = data if isinstance(data, list) else [data]
+    out = [_parse_hourly(loc, mapping, model_cls) for loc in locs]
+    while len(out) < n:          # defensive: never return fewer series than zones
+        out.append([])
+    return out[:n]
+
+
+def fetch_air_quality_multi(coords: list[tuple[float, float]], past_days: int = 30,
+                            forecast_days: int = 5, timezone: str = "Asia/Kolkata") -> list[list[Reading]]:
+    params = {
+        "latitude": ",".join(f"{lat:.4f}" for lat, _ in coords),
+        "longitude": ",".join(f"{lon:.4f}" for _, lon in coords),
+        "hourly": ",".join(_AQ_MAP.keys()),
+        "past_days": past_days, "forecast_days": forecast_days, "timezone": timezone,
+    }
+    return _parse_multi(get_json(AQ_URL, params), _AQ_MAP, Reading, len(coords))
+
+
+def fetch_weather_multi(coords: list[tuple[float, float]], past_days: int = 30,
+                        forecast_days: int = 5, timezone: str = "Asia/Kolkata") -> list[list[WeatherPoint]]:
+    params = {
+        "latitude": ",".join(f"{lat:.4f}" for lat, _ in coords),
+        "longitude": ",".join(f"{lon:.4f}" for _, lon in coords),
+        "hourly": ",".join(_WX_MAP.keys()),
+        "past_days": past_days, "forecast_days": forecast_days, "timezone": timezone,
+        "wind_speed_unit": "ms",
+    }
+    return _parse_multi(get_json(WX_URL, params), _WX_MAP, WeatherPoint, len(coords))

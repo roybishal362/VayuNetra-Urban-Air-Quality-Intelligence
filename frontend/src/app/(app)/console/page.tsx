@@ -80,11 +80,12 @@ export default function CommandCenter() {
 
   useEffect(() => { setSelectedZoneId(null); setTime({ layer: "current", horizon: 0 }); setPlaying(false); }, [cityId]);
 
-  // pre-fetch every horizon grid so the time-lapse plays smoothly
+  // pre-fetch every horizon grid so the time-lapse plays smoothly. Don't clear the cache
+  // up front — overwrite it when the new grids arrive so the live 5-min refresh swaps
+  // seamlessly instead of blanking the heatmap.
   useEffect(() => {
     if (!cityId || !intel) return;
     let cancelled = false;
-    setGridCache({});
     Promise.all(TLAPSE.map((t) =>
       api.grid(cityId, t.layer, t.horizon).then((g) => [gridKey(t), g] as const).catch(() => null),
     )).then((res) => {

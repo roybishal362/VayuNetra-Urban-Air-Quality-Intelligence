@@ -46,7 +46,7 @@ def city_detail(cid: str):
 
 
 @router.get("/cities/{cid}/intelligence", response_model=CityIntelligence, tags=["intelligence"])
-def intelligence(cid: str, mode: str = "snapshot", refresh: bool = False):
+def intelligence(cid: str, mode: str = "auto", refresh: bool = False):
     _require_city(cid)
     try:
         return get_city_intelligence(cid, mode=mode, refresh=refresh)
@@ -67,7 +67,7 @@ def zone_forecast(cid: str, zid: str, hours: int = Query(72, ge=1, le=120)):
     city = _require_city(cid)
     if not any(z.id == zid for z in city.zones):
         raise HTTPException(status_code=404, detail=f"Unknown zone '{zid}' in {cid}")
-    obs = get_city_observations(cid, mode="snapshot")
+    obs = get_city_observations(cid, mode="auto")
     model = get_model(cid)
     zf = model.predict_zone(obs, city, zid, future_hours=hours)
     z = next(zz for zz in city.zones if zz.id == zid)
@@ -90,7 +90,7 @@ def zone_history(cid: str, zid: str, hours: int = Query(48, ge=6, le=168)):
     city = _require_city(cid)
     if not any(z.id == zid for z in city.zones):
         raise HTTPException(status_code=404, detail=f"Unknown zone '{zid}' in {cid}")
-    obs = get_city_observations(cid, mode="snapshot")
+    obs = get_city_observations(cid, mode="auto")
     return build_history(city, obs, zid, hours)
 
 

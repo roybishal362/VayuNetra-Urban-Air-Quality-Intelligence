@@ -46,6 +46,22 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
     return () => { cancelled = true; };
   }, [cityId]);
 
+  // Keep the data live: silently re-pull intelligence every 5 min and whenever the tab
+  // regains focus. No spinner, no flash — just swap in the fresher bundle as the backend
+  // refreshes from Open-Meteo. The backend serves cached data instantly and revalidates
+  // in the background, so these polls are cheap.
+  useEffect(() => {
+    if (!cityId) return;
+    let stop = false;
+    const refresh = () => {
+      api.intelligence(cityId).then((it) => { if (!stop) setIntel(it); }).catch(() => {});
+    };
+    const id = window.setInterval(refresh, 5 * 60 * 1000);
+    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { stop = true; window.clearInterval(id); document.removeEventListener("visibilitychange", onVisible); };
+  }, [cityId]);
+
   const city = cities.find((c) => c.id === cityId) ?? null;
 
   return (
