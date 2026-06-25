@@ -157,13 +157,20 @@ function deoverlap(map: maplibregl.Map, markers: maplibregl.Marker[]) {
   for (const p of pts) p.m.setOffset([p.ox, p.oy]);
 }
 
+// Idempotent: re-adds any missing source OR layer independently. This matters because a basemap
+// `setStyle` can drop our custom layers while (sometimes) keeping the source — guarding on the
+// source alone left the grid layers un-re-added, so the AQI grid vanished after switching basemaps.
 function addDataLayers(map: maplibregl.Map) {
   if (!map.getSource("grid")) {
     map.addSource("grid", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+  }
+  if (!map.getLayer("grid-2d")) {
     map.addLayer({
       id: "grid-2d", type: "fill", source: "grid", layout: { visibility: "none" },
       paint: { "fill-color": ["get", "color"], "fill-opacity": 0.42, "fill-outline-color": "rgba(255,255,255,0.12)" },
     });
+  }
+  if (!map.getLayer("grid-3d")) {
     map.addLayer({
       id: "grid-3d", type: "fill-extrusion", source: "grid",
       paint: {
@@ -178,6 +185,8 @@ function addDataLayers(map: maplibregl.Map) {
   }
   if (!map.getSource("industry")) {
     map.addSource("industry", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+  }
+  if (!map.getLayer("industry")) {
     map.addLayer({
       id: "industry", type: "circle", source: "industry",
       paint: { "circle-radius": 3.2, "circle-color": "#E67E22", "circle-opacity": 0.9, "circle-stroke-width": 0.5, "circle-stroke-color": "#7c3a0f" },
@@ -287,8 +296,12 @@ export default function AirMap({
     const map = mapRef.current;
     if (!ready || !map) return;
     if (VECTOR) {
+      // setStyle wipes our custom layers; re-apply on style.load AND idle (safety net, in case
+      // the style.load fires before our handler attaches on a fast basemap toggle).
+      const reapply = () => { applyData(map); map.triggerRepaint(); };
       map.setStyle(MAPTILER_STYLE[basemap]);
-      map.once("style.load", () => { applyData(map); map.triggerRepaint(); });
+      map.once("style.load", reapply);
+      map.once("idle", reapply);
     } else {
       map.setLayoutProperty("carto", "visibility", basemap === "dark" ? "visible" : "none");
       map.setLayoutProperty("voyager", "visibility", basemap === "streets" ? "visible" : "none");
