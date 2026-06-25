@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import type { City, EnforcementItem, EnforcementRoi } from "@/lib/types";
 import { trendArrow } from "@/lib/aqi";
 import { sourceColor } from "@/lib/sources";
+import WhatIfSimulator from "@/components/WhatIfSimulator";
 
 function RoiPlanner({ city }: { city: City }) {
   const [n, setN] = useState(3);
@@ -141,6 +142,7 @@ export default function EnforcementPanel({
   return (
     <div className="space-y-2">
       <RoiPlanner city={city} />
+      <WhatIfSimulator city={city} />
       <div className="px-1 text-xs text-slate-400">
         Ranked by severity, forecast trend, source actionability and population exposure.
       </div>

@@ -72,6 +72,11 @@ export interface Intervention {
   policy: string; city: string; effect_pct: number; verdict: string; note: string; source: string;
 }
 
+export interface WhatIf {
+  city_id: string; original_avg_aqi: number; new_avg_aqi: number; delta_aqi: number;
+  people_protected: number; reductions: Record<string, number>;
+}
+
 export interface EnforcementItem {
   rank: number; zone_id: string; zone_name: string; priority: number;
   dominant_source: string; dominant_label: string; current_aqi: number; forecast_aqi_24h: number;
