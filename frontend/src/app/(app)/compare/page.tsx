@@ -7,6 +7,7 @@ import { useCity } from "@/lib/cityStore";
 import type { CityComparison } from "@/lib/types";
 import { aqiColor } from "@/lib/aqi";
 import { compact, skillLabel } from "@/lib/format";
+import ComplianceLedger from "@/components/ComplianceLedger";
 import StateMsg from "@/components/StateMsg";
 
 export default function ComparePage() {
@@ -70,6 +71,8 @@ export default function ComparePage() {
           One pipeline and model architecture across every city — adding a metro is a single config entry.
           Click any city to open its Command Center.
         </p>
+
+        <ComplianceLedger />
       </div>
     </div>
   );

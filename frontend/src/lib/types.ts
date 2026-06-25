@@ -63,6 +63,15 @@ export interface HealthCost {
   methodology: string;
 }
 
+export interface CityCompliance {
+  city_id: string; city_name: string; avg_pm25: number; pct_wards_over_naaqs: number;
+  naaqs_exceedance: number; who_exceedance: number; grade: string; grade_color: string;
+  naaqs: number; who: number;
+}
+export interface Intervention {
+  policy: string; city: string; effect_pct: number; verdict: string; note: string; source: string;
+}
+
 export interface EnforcementItem {
   rank: number; zone_id: string; zone_name: string; priority: number;
   dominant_source: string; dominant_label: string; current_aqi: number; forecast_aqi_24h: number;
