@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 
 from app.core.logging import get_logger
+from app.data.sources.powerplants import industrial_pressure as _plant_pressure
 from app.domain.aqi import compute_aqi
 from app.ml.features import build_zone_frame
 from app.schemas.air import Reading
@@ -120,6 +121,9 @@ def attribute_zone(obs: CityObservations, city: City, zone_id: str) -> ZoneAttri
     pm10 *= lu_factor
 
     fire_score, fires_n, fire_dists = _upwind_fire_signal(zone.center, wdir, obs.fires, obs.now_ts)
+    # real registered fossil-combustion capacity near this ward (WRI power-plant registry) —
+    # a grounded industry prior that contributes even when the SO2 signal is weak/missing.
+    plant_p = _plant_pressure(zone.center.lat, zone.center.lon)
 
     # --- indicators (0..3) ---
     i_no2 = _clip(no2 / _NO2_REF, 0, 3)
@@ -129,19 +133,23 @@ def attribute_zone(obs: CityObservations, city: City, zone_id: str) -> ZoneAttri
     i_fire = _clip(fire_score / _FIRE_REF, 0, 3)
     coarse_frac = _clip((pm10 - pm25) / pm10, 0, 1) if pm10 > 0 else 0.0
 
-    # --- raw source weights ---
+    # --- raw source weights (calibrated so the city-average split matches published
+    #     receptor-model studies — see services/attribution_validation.py). Ever-present
+    #     sources (residential burning, road dust, secondary) get a base that SCALES with
+    #     pollution intensity, so it grows in dirty cities without inflating clean ones. ---
+    bi = _clip(pm25 / 90.0, 0.4, 1.3)   # base-intensity factor
     w = {
-        "vehicular": 0.9 * i_no2 + 0.25 * i_co,
-        "industrial": 1.0 * i_so2,
-        "biomass_burning": 1.1 * i_fire + 0.35 * i_co,
-        "dust_construction": 1.6 * coarse_frac,
-        "secondary": 0.5 + 0.3 * i_o3,
+        "vehicular": 0.75 * i_no2 + 0.2 * i_co + 0.35 * traffic_n,  # +road-density grounding
+        "industrial": 0.85 * i_so2 + 0.3 * plant_p,                 # registered plants are a prior, not the driver
+        "biomass_burning": 1.0 * i_fire + 0.45 * i_co + 0.40 * bi,  # +year-round residential burning
+        "dust_construction": 1.5 * coarse_frac + 0.22 * bi,         # +ever-present road/construction dust
+        "secondary": 0.45 + 0.3 * i_o3 + 0.18 * bi,                 # regional secondary aerosol
     }
 
     # --- land-use modulation: roads -> traffic/dust, industry -> industrial ---
     w["vehicular"] *= 1 + 0.5 * traffic_n
     w["dust_construction"] *= 1 + 0.25 * traffic_n
-    w["industrial"] *= 1 + 0.7 * ind_n
+    w["industrial"] *= 1 + 0.45 * ind_n
 
     # --- meteorological modulation: stagnation amplifies local sources ---
     local_amp = _clip(1.4 - wind / 4.0, 0.75, 1.5) * _clip(500.0 / max(blh, 150.0), 0.85, 1.6)
@@ -176,7 +184,7 @@ def attribute_zone(obs: CityObservations, city: City, zone_id: str) -> ZoneAttri
     fires_modeled = any(getattr(f, "source", "") == "FIRMS-model" for f in obs.fires)
     evidence = _build_evidence(no2, so2, co, pm10, pm25, coarse_frac, i_no2, i_so2,
                                fires_n, fire_dists, wdir, wind, blh, fires_modeled,
-                               traffic_n, ind_n)
+                               traffic_n, ind_n, plant_p)
     aqi = compute_aqi(Reading(ts=obs.now_ts, pm25=pm25, pm10=pm10, no2=no2, so2=so2, o3=o3, co=co))
 
     return ZoneAttribution(
@@ -194,7 +202,7 @@ def attribute_zone(obs: CityObservations, city: City, zone_id: str) -> ZoneAttri
 
 def _build_evidence(no2, so2, co, pm10, pm25, coarse_frac, i_no2, i_so2,
                     fires_n, fire_dists, wdir, wind, blh, fires_modeled=False,
-                    traffic_n=0.0, ind_n=0.0) -> list[Evidence]:
+                    traffic_n=0.0, ind_n=0.0, plant_p=0.0) -> list[Evidence]:
     ev: list[Evidence] = []
     if i_no2 >= 0.8:
         ev.append(Evidence(signal="NO₂", detail=f"{no2:.0f} µg/m³ ({no2/_NO2_REF:.1f}× typical) — combustion/traffic",
@@ -218,6 +226,10 @@ def _build_evidence(no2, so2, co, pm10, pm25, coarse_frac, i_no2, i_so2,
     if ind_n >= 0.4:
         ev.append(Evidence(signal="Industrial proximity",
                            detail="within ~2–3 km of mapped industrial areas",
+                           points_to="industrial"))
+    if plant_p >= 0.3:
+        ev.append(Evidence(signal="Registered emitters",
+                           detail="significant fossil power-plant capacity within ~80 km (WRI registry)",
                            points_to="industrial"))
     if traffic_n >= 0.55:
         ev.append(Evidence(signal="Traffic density",

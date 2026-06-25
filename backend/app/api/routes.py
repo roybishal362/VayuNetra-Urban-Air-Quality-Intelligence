@@ -15,6 +15,7 @@ from app.schemas.grid import GridResponse
 from app.schemas.intelligence import CityComparison, CityIntelligence
 from app.schemas.scenario import SimulationResult, ZoneHistory
 from app.services import grid as grid_service
+from app.services.attribution_validation import validate as validate_attribution
 from app.services.downscale import factor_at, scale_forecast
 from app.services.intelligence_service import compare_cities, get_city_intelligence, get_model
 from app.services.scenario import build_history, simulate_reduction
@@ -108,3 +109,14 @@ def simulate(cid: str, zid: str, source: str = Query(...), reduction: float = Qu
 def briefing(cid: str):
     _require_city(cid)
     return city_briefing(get_city_intelligence(cid))
+
+
+@router.get("/cities/{cid}/attribution-validation", tags=["intelligence"])
+def attribution_validation(cid: str):
+    """Our source split vs published receptor-model studies — the honest accuracy check."""
+    _require_city(cid)
+    intel = get_city_intelligence(cid)
+    result = validate_attribution(cid, intel.attributions)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"No reference apportionment for '{cid}'")
+    return result
