@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🌬️ VayuNetra — *The eye on the air*
+<img src="docs/logo.png" width="130" alt="VayuNetra logo — the eye on the air" />
+
+# VayuNetra — *The eye on the air*
 
 ### Urban Air-Quality Intelligence for Indian Cities
 
