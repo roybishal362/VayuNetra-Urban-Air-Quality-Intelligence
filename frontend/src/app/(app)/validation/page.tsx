@@ -10,7 +10,7 @@ export default function ValidationPage() {
   if (!intel || !city) return <StateMsg title="Loading validation…" />;
 
   return (
-    <div className="h-full overflow-y-auto p-6">
+    <div className="h-full overflow-y-auto p-4 sm:p-6">
       <div className="mx-auto max-w-2xl space-y-4">
         <header>
           <h1 className="font-display text-2xl font-bold text-slate-100">Model validation — {city.name}</h1>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import Splash from "@/components/Splash";
 import "./globals.css";
@@ -21,6 +21,15 @@ export const metadata: Metadata = {
   title: "VayuNetra — Urban Air Quality Intelligence",
   description:
     "The eye on the air. Live hyperlocal AQI, 72-hour ML forecasts, source attribution and enforcement-ready advisories for every Indian city. Monitor → Predict → Attribute → Act.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // allow pinch-zoom (a11y) — never disable it
+  maximumScale: 5,
+  themeColor: "#0a0b0d",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

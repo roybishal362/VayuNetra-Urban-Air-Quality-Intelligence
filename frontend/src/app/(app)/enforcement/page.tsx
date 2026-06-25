@@ -13,7 +13,7 @@ export default function EnforcementPage() {
   const top = intel.enforcement[0];
 
   return (
-    <div className="h-full overflow-y-auto p-6">
+    <div className="h-full overflow-y-auto p-4 sm:p-6">
       <div className="mx-auto max-w-3xl space-y-5">
         <header>
           <h1 className="font-display text-2xl font-bold text-slate-100">Enforcement priorities — {city.name}</h1>

@@ -9,7 +9,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   return (
     <CityProvider>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-[100dvh] overflow-hidden">
         <SideNav />
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar />

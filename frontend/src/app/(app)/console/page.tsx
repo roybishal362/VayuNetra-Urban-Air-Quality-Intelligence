@@ -109,8 +109,8 @@ export default function CommandCenter() {
   if (!city) return <div className="grid h-full place-items-center text-text-mid">Loading…</div>;
 
   return (
-    <div className="flex h-full">
-      <div className="flex min-w-0 flex-1 flex-col">
+    <div className="flex h-full flex-col lg:flex-row">
+      <div className="flex h-[55%] min-w-0 flex-shrink-0 flex-col lg:h-auto lg:flex-1 lg:flex-shrink">
         {/* map toolbar — all map controls live here, never floating over the markers */}
         <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-white/[0.06] bg-vn-900/50 px-3 py-2 backdrop-blur">
           <TimeControl value={time} onChange={setTime} />
@@ -172,11 +172,13 @@ export default function CommandCenter() {
           )}
         </div>
         {intel && (
-          <BottomStrip intel={intel} showIndustry={showIndustry} onToggleIndustry={() => setShowIndustry((s) => !s)} />
+          <div className="hidden lg:block">
+            <BottomStrip intel={intel} showIndustry={showIndustry} onToggleIndustry={() => setShowIndustry((s) => !s)} />
+          </div>
         )}
       </div>
 
-      <aside className="flex w-[360px] flex-shrink-0 flex-col border-l border-white/[0.06] bg-vn-900/60 backdrop-blur-xl lg:w-[400px] xl:w-[440px]">
+      <aside className="flex min-h-0 w-full flex-1 flex-col border-t border-white/[0.06] bg-vn-900/60 backdrop-blur-xl lg:w-[400px] lg:flex-none lg:border-l lg:border-t-0 xl:w-[440px]">
         <div role="tablist" aria-label="Detail panels" className="flex flex-shrink-0 border-b border-white/[0.06] px-2 pt-2">
           {(["overview", "enforce", "zone", "metrics"] as Tab[]).map((t) => (
             <button

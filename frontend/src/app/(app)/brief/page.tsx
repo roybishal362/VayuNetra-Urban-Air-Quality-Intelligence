@@ -56,7 +56,7 @@ export default function BriefPage() {
   })();
 
   return (
-    <div className="brief-page h-full overflow-y-auto bg-vn-base p-6 print:h-auto print:overflow-visible">
+    <div className="brief-page h-full overflow-y-auto bg-vn-base p-4 sm:p-6 print:h-auto print:overflow-visible">
       <div className="mx-auto max-w-3xl space-y-5">
         {/* action bar (not printed) */}
         <div className="flex items-center justify-between print:hidden">

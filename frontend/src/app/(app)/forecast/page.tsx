@@ -20,8 +20,8 @@ export default function ForecastPage() {
   const advisory = intel.advisories.find((a) => a.zone_id === zoneId);
 
   return (
-    <div className="flex h-full">
-      <aside className="w-60 flex-shrink-0 overflow-y-auto border-r border-ink-700 p-3">
+    <div className="flex h-full flex-col lg:flex-row">
+      <aside className="max-h-[38%] w-full flex-shrink-0 overflow-y-auto border-b border-ink-700 p-3 lg:max-h-none lg:w-60 lg:border-b-0 lg:border-r">
         <div className="mb-2 px-1 text-xs uppercase tracking-wider text-slate-500">{city.name} · {city.zones.length} wards</div>
         <div className="space-y-1">
           {city.zones.map((z) => {
@@ -43,7 +43,7 @@ export default function ForecastPage() {
         </div>
       </aside>
 
-      <div className="min-w-0 flex-1 overflow-y-auto p-5">
+      <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
         <div className="max-w-2xl">
           <h1 className="mb-3 font-display text-xl font-bold text-slate-100">Forecast explorer</h1>
           {zoneId ? (

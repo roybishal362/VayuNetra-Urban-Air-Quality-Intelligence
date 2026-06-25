@@ -68,7 +68,7 @@ export default function TrendsPage() {
   const fmtHour = (h: number) => `${((h + 11) % 12) + 1}${h < 12 ? "am" : "pm"}`;
 
   return (
-    <div className="h-full overflow-y-auto p-6">
+    <div className="h-full overflow-y-auto p-4 sm:p-6">
       <div className="mx-auto max-w-4xl space-y-5">
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div>

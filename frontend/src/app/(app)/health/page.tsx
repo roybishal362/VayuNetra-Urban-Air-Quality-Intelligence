@@ -44,7 +44,7 @@ export default function HealthPage() {
   const vulnWards = rows.filter((r) => r.aqi > 200 && r.vuln > 0);
 
   return (
-    <div className="h-full overflow-y-auto p-6">
+    <div className="h-full overflow-y-auto p-4 sm:p-6">
       <div className="mx-auto max-w-5xl space-y-5">
         <header>
           <h1 className="font-display text-2xl font-bold text-text-hi">Exposure &amp; health — {city.name}</h1>
@@ -125,7 +125,8 @@ export default function HealthPage() {
         {/* per-ward table */}
         <div className="card p-4">
           <div className="eyebrow mb-2">Ward-by-ward exposure</div>
-          <table className="w-full text-sm">
+          <div className="-mx-1 overflow-x-auto px-1">
+          <table className="w-full min-w-[440px] text-sm">
             <thead className="text-[10px] uppercase tracking-[0.08em] text-text-mid">
               <tr className="border-b border-white/[0.06] text-left">
                 <th className="py-1.5 font-medium">Ward</th>
@@ -147,6 +148,7 @@ export default function HealthPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>

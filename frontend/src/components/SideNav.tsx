@@ -23,7 +23,7 @@ const ITEMS = [
 export default function SideNav() {
   const path = usePathname();
   return (
-    <nav aria-label="Primary" className="flex w-16 flex-shrink-0 flex-col items-center gap-1 border-r border-white/[0.06] bg-vn-900/80 py-3 backdrop-blur-xl print:hidden">
+    <nav aria-label="Primary" className="flex w-14 flex-shrink-0 flex-col items-center gap-1 overflow-y-auto border-r border-white/[0.06] bg-vn-900/80 py-3 backdrop-blur-xl sm:w-16 print:hidden">
       <Link
         href="/"
         aria-label="VayuNetra — back to home"
