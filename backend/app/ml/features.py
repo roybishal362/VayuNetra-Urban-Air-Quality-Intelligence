@@ -19,6 +19,10 @@ from app.schemas.observations import CityObservations, ZoneSeries
 
 POLLUTANTS = ["pm25", "pm10", "no2", "so2", "o3", "co"]
 WEATHER = ["temp_c", "humidity", "wind_speed", "wind_dir", "precip", "blh"]
+# NOTE: we deliberately do NOT use target-time chemistry (CAMS forecast of NO2/PM10/… at t0+h)
+# as features. In training those values are OBSERVED (≈ the target), which inflates skill to a
+# dishonest ~84%; at real inference they'd be CAMS forecasts we have no historical record of to
+# validate against. Current-time chemistry (cur_*) is used and is legitimate.
 LAGS = [1, 3, 6, 12, 24, 48]
 HORIZONS = [6, 12, 24, 48, 72, 96, 120]
 EVAL_HORIZONS = [24, 48, 72]
