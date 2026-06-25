@@ -26,6 +26,14 @@ next-env.d.ts
 # ---- Dev-only Playwright screenshot tooling ----
 frontend/screenshot.mjs
 frontend/shot-*.png
+frontend/verify*.mjs
+frontend/*-probe.mjs
+
+# ---- Team-only docs (kept local, NOT for the public submission repo) ----
+_team/
+
+# ---- Hackathon reference material (not part of the project) ----
+*Problem_Statements.pdf
 
 # ---- Data: keep curated snapshots (committed); ignore live cache + model binaries ----
 data/cache/
