@@ -25,6 +25,18 @@ class AdvisoryItem(BaseModel):
     generated_by: str                # "llm" | "template"
 
 
+class MatchedSource(BaseModel):
+    """A real, registered emitter near a ward — geospatial evidence for enforcement."""
+    name: str
+    kind: str                        # power_plant_coal | power_plant_gas | active_fire | industrial …
+    lat: float
+    lon: float
+    distance_km: float
+    bearing: str                     # compass direction from the ward to the source
+    upwind: bool                     # sitting upwind of the ward → likely contributing now
+    detail: str                      # e.g. "Coal power plant · 1820 MW"
+
+
 class EnforcementItem(BaseModel):
     rank: int
     zone_id: str
@@ -40,6 +52,7 @@ class EnforcementItem(BaseModel):
     recommended_action: str
     evidence: list[str]
     confidence: float
+    matched_sources: list[MatchedSource] = []   # real nearby registered emitters (geospatial proof)
 
 
 class CityHealth(BaseModel):

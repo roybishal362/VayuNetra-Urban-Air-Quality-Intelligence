@@ -10,6 +10,7 @@ from app.schemas.attribution import ZoneAttribution
 from app.schemas.city import City
 from app.schemas.forecast import ZoneForecast
 from app.schemas.intelligence import EnforcementItem
+from app.services.source_registry import match_sources
 
 log = get_logger("vayunetra.enforcement")
 
@@ -58,13 +59,24 @@ def build_enforcement(city: City, attributions: list[ZoneAttribution],
         exposure = min(1.0, (pop / 100_000) * 0.6 + (vuln / 40))
         priority = (0.45 * sev + 0.15 * min(worsening, 1) + 0.25 * act + 0.15 * exposure) * 100
 
+        # real registered emitters near this ward (named, geolocated, upwind-flagged)
+        sources = match_sources(zone.center.lat, zone.center.lon, a.wind_dir)
+        evidence = [e.detail for e in a.evidence]
+        upwind = [s for s in sources if s.upwind]
+        if upwind:
+            evidence.append(
+                "Upwind registered emitters: "
+                + "; ".join(f"{s.name} ({s.detail}, {s.distance_km:.0f} km {s.bearing})" for s in upwind[:2])
+            )
+
         rows.append(EnforcementItem(
             rank=0, zone_id=a.zone_id, zone_name=a.zone_name, priority=round(priority, 1),
             dominant_source=dom.source, dominant_label=dom.label,
             current_aqi=a.aqi, forecast_aqi_24h=fc24, trend=_trend(a.aqi, fc24),
             population_exposed=pop, vulnerable_sites=vuln,
             recommended_action=_ACTION.get(dom.source, _ACTION["secondary"]),
-            evidence=[e.detail for e in a.evidence], confidence=a.overall_confidence,
+            evidence=evidence, confidence=a.overall_confidence,
+            matched_sources=sources,
         ))
 
     rows.sort(key=lambda r: r.priority, reverse=True)
