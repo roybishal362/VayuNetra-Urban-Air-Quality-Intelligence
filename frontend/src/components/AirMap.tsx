@@ -214,6 +214,7 @@ export default function AirMap({
   const [mode, setMode] = useState<"gl" | "static">(() => (hasWebGL() ? "gl" : "static"));
   const [ready, setReady] = useState(false);
   const [tilesBlocked, setTilesBlocked] = useState(false);
+  const [bearing, setBearing] = useState(-18);
 
   const applyData = (map: maplibregl.Map) => {
     addDataLayers(map);
@@ -256,6 +257,7 @@ export default function AirMap({
     map.on("load", onReady);
     map.once("idle", onReady);
     map.on("moveend", () => deoverlap(map, markersRef.current)); // re-spread markers after zoom/pan
+    map.on("rotate", () => setBearing(map.getBearing()));        // keep the compass in sync
 
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(containerRef.current);
@@ -390,8 +392,24 @@ export default function AirMap({
         <WindLayer map={mapRef.current} dir={wind.dir} speed={wind.speed} />
       )}
 
+      {/* dynamic compass — the needle always points to true north; click to reset north-up */}
+      {ready && (
+        <button
+          onClick={() => mapRef.current?.easeTo({ bearing: 0, pitch: is3DRef.current ? 50 : 0, duration: 450 })}
+          title="Reset to north"
+          aria-label="Reset map to north"
+          className="glass absolute left-3 top-3 z-20 grid h-10 w-10 place-items-center rounded-full transition-colors hover:bg-vn-800/80"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" style={{ transform: `rotate(${-bearing}deg)` }}>
+            <polygon points="12,3 8.6,13 12,11 15.4,13" fill="#E93F33" />
+            <polygon points="12,21 8.6,13 12,15 15.4,13" fill="rgba(230,233,240,0.4)" />
+            <text x="12" y="3" textAnchor="middle" fontSize="4.4" fontWeight="700" fill="#E93F33" fontFamily="monospace">N</text>
+          </svg>
+        </button>
+      )}
+
       {wind && wind.speed > 0.3 && (
-        <div className="glass absolute left-3 top-3 z-20 flex items-center gap-2 px-2.5 py-1.5">
+        <div className="glass absolute left-3 top-[3.75rem] z-20 flex items-center gap-2 px-2.5 py-1.5">
           <svg width="13" height="13" viewBox="0 0 24 24" className="text-text-hi" style={{ transform: `rotate(${(wind.dir + 180) % 360}deg)` }}>
             <path d="M12 3 L12 21 M12 3 L7.5 9 M12 3 L16.5 9" stroke="currentColor" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
