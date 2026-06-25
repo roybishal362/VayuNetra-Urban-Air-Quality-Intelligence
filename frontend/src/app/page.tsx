@@ -156,7 +156,7 @@ export default function Landing() {
                   <>
                     <StatCard label="City AQI" value={String(heroCmp.avg_aqi)} sub={heroCmp.category} color={aqiColor(heroCmp.avg_aqi)} />
                     <StatCard label="Worst ward" value={String(heroCmp.worst_aqi)} sub={heroCmp.worst_zone} color={aqiColor(heroCmp.worst_aqi)} />
-                    <StatCard label="Exposed" value={compact(heroCmp.exposed)} sub="poor air or worse" />
+                    <StatCard label="Exposed" value={compact(heroCmp.exposed)} sub="in poor+ air" />
                   </>
                 )}
               </div>
@@ -179,6 +179,24 @@ export default function Landing() {
               <div className="eyebrow mt-1">{s.label}</div>
             </Reveal>
           ))}
+        </div>
+      </section>
+
+      {/* ── TRUSTED DATA ────────────────────────────────────── */}
+      <section className="border-b border-white/[0.06]">
+        <div className="mx-auto max-w-7xl px-5 py-9">
+          <Reveal className="text-center">
+            <div className="eyebrow">Built on open, authoritative data — no black boxes</div>
+          </Reveal>
+          <Reveal delay={80}>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              {["CPCB AQI", "NASA FIRMS", "Open-Meteo · CAMS", "ECMWF boundary layer", "OpenStreetMap", "MapTiler"].map((s) => (
+                <span key={s} className="rounded-full border border-white/[0.07] bg-vn-800/50 px-3.5 py-1.5 font-mono text-[12px] text-text-mid transition-colors hover:border-white/[0.14] hover:text-text">
+                  {s}
+                </span>
+              ))}
+            </div>
+          </Reveal>
         </div>
       </section>
 
@@ -258,6 +276,23 @@ export default function Landing() {
               </Link>
             </Reveal>
           ))}
+        </div>
+      </section>
+
+      {/* ── MISSION ─────────────────────────────────────────── */}
+      <section className="border-t border-white/[0.06] bg-vn-900/30">
+        <div className="mx-auto max-w-4xl px-5 py-16 text-center">
+          <Reveal>
+            <div className="eyebrow">Why it matters</div>
+            <h2 className="mx-auto mt-3 max-w-3xl font-display text-[26px] font-semibold leading-snug tracking-tight text-text-hi sm:text-3xl">
+              Air pollution is India&rsquo;s largest environmental health risk — yet most cities can only see
+              yesterday&rsquo;s average.
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-text-mid">
+              VayuNetra gives them the next 72 hours, the sources behind every spike, and a ranked list of
+              where to send inspectors first — so monitoring finally turns into cleaner air, ward by ward.
+            </p>
+          </Reveal>
         </div>
       </section>
 

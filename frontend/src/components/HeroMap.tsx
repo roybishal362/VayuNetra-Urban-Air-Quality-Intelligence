@@ -35,9 +35,13 @@ const EXTRUSION_COLOR: ExpressionSpecification = [
   200, "#F8C238", 250, "#F29C33", 300, "#ED6B30", 400, "#E93F33", 500, "#AF2D24",
 ];
 
-function cellPolygon(lat: number, lon: number, stepKm: number) {
-  const dLat = stepKm / 111 / 2;
-  const dLon = stepKm / (111 * Math.cos((lat * Math.PI) / 180)) / 2;
+// shrink each cell to ~68% of its footprint so the columns read as distinct
+// towers (a 3D skyline) instead of fusing into one flat sheet.
+const GAP = 0.68;
+
+function cellPolygon(lat: number, lon: number, stepKm: number, shrink = GAP) {
+  const dLat = (stepKm / 111 / 2) * shrink;
+  const dLon = (stepKm / (111 * Math.cos((lat * Math.PI) / 180)) / 2) * shrink;
   return [[
     [lon - dLon, lat - dLat], [lon + dLon, lat - dLat],
     [lon + dLon, lat + dLat], [lon - dLon, lat + dLat], [lon - dLon, lat - dLat],
@@ -49,8 +53,21 @@ function fc(cells: GridCell[], stepKm: number): GeoJSON.FeatureCollection {
     type: "FeatureCollection",
     features: cells.map((c) => ({
       type: "Feature",
-      properties: { aqi: c.aqi, height: Math.min(Math.max(c.aqi * 6, 40), 3000) },
+      // taller, more dramatic skyline; floor keeps clean-air cells visible as tiles
+      properties: { aqi: c.aqi, height: Math.min(Math.max((c.aqi - 20) * 9, 60), 4200) },
       geometry: { type: "Polygon", coordinates: cellPolygon(c.lat, c.lon, stepKm) },
+    })),
+  };
+}
+
+/** Flat full-footprint tiles for the ground-glow wash beneath the towers. */
+function fcGlow(cells: GridCell[], stepKm: number): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: cells.map((c) => ({
+      type: "Feature",
+      properties: { aqi: c.aqi },
+      geometry: { type: "Polygon", coordinates: cellPolygon(c.lat, c.lon, stepKm, 1) },
     })),
   };
 }
@@ -99,9 +116,9 @@ export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; 
         container: containerRef.current,
         style: HERO_STYLE ?? STYLE,
         center: [center.lon, center.lat],
-        zoom: 9.7,
-        pitch: 56,
-        bearing: -22,
+        zoom: 9.5,
+        pitch: 58,
+        bearing: -20,
         interactive: false,
         attributionControl: false,
       });
@@ -122,13 +139,20 @@ export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; 
     const onReady = () => {
       if (!map.getSource("grid")) {
         map.addSource("grid", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        // soft ground glow — a flat full-footprint wash so the towers sit in a
+        // coloured pool of light instead of floating on bare basemap.
+        map.addSource("glow", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        map.addLayer({
+          id: "grid-glow", type: "fill", source: "glow",
+          paint: { "fill-color": EXTRUSION_COLOR, "fill-opacity": 0.16 },
+        });
         map.addLayer({
           id: "grid-3d", type: "fill-extrusion", source: "grid",
           paint: {
             "fill-extrusion-color": EXTRUSION_COLOR,
             "fill-extrusion-height": ["get", "height"],
             "fill-extrusion-base": 0,
-            "fill-extrusion-opacity": 0.6,
+            "fill-extrusion-opacity": 0.92,
             "fill-extrusion-vertical-gradient": true,
           },
         });
@@ -172,6 +196,7 @@ export default function HeroMap({ cells, center, stepKm }: { cells: GridCell[]; 
     const map = mapRef.current;
     if (!ready || !map) return;
     (map.getSource("grid") as maplibregl.GeoJSONSource | undefined)?.setData(fc(cells, stepKm));
+    (map.getSource("glow") as maplibregl.GeoJSONSource | undefined)?.setData(fcGlow(cells, stepKm));
   }, [ready, cells, stepKm]);
 
   if (failed) return <HeroFallback cells={cells} />;
