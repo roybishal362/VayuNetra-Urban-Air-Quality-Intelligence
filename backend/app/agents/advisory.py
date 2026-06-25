@@ -20,6 +20,9 @@ _RISK = {  # CPCB category -> risk band
 _LANG_NAMES = {"en": "English", "hi": "Hindi", "kn": "Kannada", "ta": "Tamil",
                "pa": "Punjabi", "ur": "Urdu", "te": "Telugu", "mr": "Marathi", "bn": "Bengali"}
 
+# Per-risk-band advisories in native script. Authored offline (no live translation API),
+# so every city gets its regional language deterministically even when the LLM is offline:
+# Marathi (Mumbai), Bengali (Kolkata), Tamil (Chennai), Telugu (Hyderabad), Kannada (Bengaluru).
 _TEMPLATES: dict[str, dict] = {
     "Low": {
         "headline": "Air quality is acceptable",
@@ -27,6 +30,11 @@ _TEMPLATES: dict[str, dict] = {
                      "Unusually sensitive individuals should monitor for symptoms."],
         "en": "Air quality in {zone} is {cat} (AQI {aqi}). It is generally safe to be outdoors.",
         "hi": "{zone} में वायु गुणवत्ता {cat} है (AQI {aqi})। बाहर रहना आमतौर पर सुरक्षित है।",
+        "mr": "{zone} मधील हवेची गुणवत्ता समाधानकारक आहे (AQI {aqi}). बाहेर राहणे साधारणपणे सुरक्षित आहे.",
+        "bn": "{zone}-এ বাতাসের গুণমান সন্তোষজনক (AQI {aqi})। বাইরে থাকা সাধারণত নিরাপদ।",
+        "ta": "{zone}-இல் காற்றின் தரம் ஏற்றுக்கொள்ளத்தக்கது (AQI {aqi}). வெளியில் இருப்பது பொதுவாக பாதுகாப்பானது.",
+        "te": "{zone}లో గాలి నాణ్యత ఆమోదయోగ్యంగా ఉంది (AQI {aqi}). బయట ఉండటం సాధారణంగా సురక్షితం.",
+        "kn": "{zone}ನಲ್ಲಿ ಗಾಳಿಯ ಗುಣಮಟ್ಟ ಸ್ವೀಕಾರಾರ್ಹವಾಗಿದೆ (AQI {aqi}). ಹೊರಗಿರುವುದು ಸಾಮಾನ್ಯವಾಗಿ ಸುರಕ್ಷಿತ.",
     },
     "Moderate": {
         "headline": "Sensitive groups should take care",
@@ -34,6 +42,11 @@ _TEMPLATES: dict[str, dict] = {
                      "Children and the elderly should take indoor breaks."],
         "en": "Air quality in {zone} is Moderate (AQI {aqi}). Sensitive groups should reduce prolonged outdoor exertion.",
         "hi": "{zone} में वायु गुणवत्ता मध्यम है (AQI {aqi})। संवेदनशील समूह लंबे समय तक बाहरी परिश्रम कम करें।",
+        "mr": "{zone} मधील हवेची गुणवत्ता मध्यम आहे (AQI {aqi}). संवेदनशील गटांनी दीर्घकाळ बाहेरील श्रम कमी करावेत.",
+        "bn": "{zone}-এ বাতাসের গুণমান মাঝারি (AQI {aqi})। সংবেদনশীল গোষ্ঠীর দীর্ঘক্ষণ বাইরে পরিশ্রম কমানো উচিত।",
+        "ta": "{zone}-இல் காற்றின் தரம் மிதமானது (AQI {aqi}). உணர்திறன் கொண்டவர்கள் நீண்ட நேரம் வெளியில் உழைப்பதைக் குறைக்க வேண்டும்.",
+        "te": "{zone}లో గాలి నాణ్యత మధ్యస్థంగా ఉంది (AQI {aqi}). సున్నితమైన వ్యక్తులు ఎక్కువసేపు బయట శ్రమను తగ్గించాలి.",
+        "kn": "{zone}ನಲ್ಲಿ ಗಾಳಿಯ ಗುಣಮಟ್ಟ ಮಧ್ಯಮವಾಗಿದೆ (AQI {aqi}). ಸೂಕ್ಷ್ಮ ಗುಂಪುಗಳು ದೀರ್ಘಕಾಲ ಹೊರಾಂಗಣ ಶ್ರಮವನ್ನು ಕಡಿಮೆ ಮಾಡಬೇಕು.",
     },
     "High": {
         "headline": "Reduce outdoor exposure",
@@ -44,6 +57,16 @@ _TEMPLATES: dict[str, dict] = {
               "people should stay indoors and wear an N95 mask outside. Schools should move activities indoors.",
         "hi": "{zone} में वायु गुणवत्ता {cat} है (AQI {aqi}) — हानिकारक। बाहरी गतिविधि सीमित करें; संवेदनशील लोग "
               "घर के अंदर रहें और बाहर N95 मास्क पहनें। स्कूल गतिविधियाँ अंदर करें।",
+        "mr": "{zone} मधील हवेची गुणवत्ता खराब आहे (AQI {aqi}) — आरोग्यास हानिकारक. बाहेरील क्रिया मर्यादित करा; "
+              "संवेदनशील व्यक्तींनी घरातच राहावे आणि बाहेर N95 मास्क वापरावा.",
+        "bn": "{zone}-এ বাতাসের গুণমান খারাপ (AQI {aqi}) — স্বাস্থ্যের জন্য ক্ষতিকর। বাইরের কার্যকলাপ সীমিত করুন; "
+              "সংবেদনশীল ব্যক্তিরা ঘরে থাকুন এবং বাইরে N95 মাস্ক পরুন।",
+        "ta": "{zone}-இல் காற்றின் தரம் மோசமாக உள்ளது (AQI {aqi}) — உடல்நலத்திற்கு கேடு. வெளிப்புற செயல்பாட்டைக் "
+              "கட்டுப்படுத்துங்கள்; உணர்திறன் உள்ளவர்கள் வீட்டிற்குள் இருங்கள், வெளியில் N95 முகக்கவசம் அணியுங்கள்.",
+        "te": "{zone}లో గాలి నాణ్యత అనారోగ్యకరంగా ఉంది (AQI {aqi}). బయటి కార్యకలాపాలను పరిమితం చేయండి; సున్నితమైనవారు "
+              "ఇంట్లోనే ఉండి బయట N95 మాస్క్ ధరించండి.",
+        "kn": "{zone}ನಲ್ಲಿ ಗಾಳಿಯ ಗುಣಮಟ್ಟ ಅನಾರೋಗ್ಯಕರವಾಗಿದೆ (AQI {aqi}). ಹೊರಾಂಗಣ ಚಟುವಟಿಕೆಯನ್ನು ಮಿತಿಗೊಳಿಸಿ; "
+              "ಸೂಕ್ಷ್ಮ ವ್ಯಕ್ತಿಗಳು ಮನೆಯೊಳಗಿರಿ ಮತ್ತು ಹೊರಗೆ N95 ಮಾಸ್ಕ್ ಧರಿಸಿ.",
     },
     "Severe": {
         "headline": "Health emergency — avoid outdoor exposure",
@@ -54,6 +77,16 @@ _TEMPLATES: dict[str, dict] = {
               "shut, run purifiers, and wear an N95 mask outside. Schools should consider suspension.",
         "hi": "{zone} में वायु गुणवत्ता गंभीर है (AQI {aqi}) — स्वास्थ्य आपातकाल। बाहर जाने से बचें, खिड़कियाँ बंद रखें, "
               "प्यूरीफायर चलाएँ और बाहर N95 मास्क पहनें। स्कूल स्थगन पर विचार करें।",
+        "mr": "{zone} मधील हवेची गुणवत्ता अतिशय गंभीर आहे (AQI {aqi}) — आरोग्य आणीबाणी. बाहेर जाणे टाळा, खिडक्या बंद "
+              "ठेवा, एअर प्युरिफायर चालवा आणि बाहेर N95 मास्क वापरा.",
+        "bn": "{zone}-এ বাতাসের গুণমান অত্যন্ত খারাপ (AQI {aqi}) — স্বাস্থ্য জরুরি অবস্থা। বাইরে যাওয়া এড়িয়ে চলুন, "
+              "জানালা বন্ধ রাখুন, এয়ার পিউরিফায়ার চালান এবং বাইরে N95 মাস্ক পরুন।",
+        "ta": "{zone}-இல் காற்றின் தரம் மிகவும் மோசம் (AQI {aqi}) — சுகாதார அவசரநிலை. வெளியில் செல்வதைத் தவிர்க்கவும், "
+              "ஜன்னல்களை மூடி வைக்கவும், காற்று சுத்திகரிப்பானை இயக்கவும், வெளியில் N95 முகக்கவசம் அணியவும்.",
+        "te": "{zone}లో గాలి నాణ్యత తీవ్రంగా ఉంది (AQI {aqi}) — ఆరోగ్య అత్యవసర పరిస్థితి. బయటకు వెళ్లడం మానుకోండి, "
+              "కిటికీలు మూసి ఉంచండి, ప్యూరిఫైయర్ నడపండి, బయట N95 మాస్క్ ధరించండి.",
+        "kn": "{zone}ನಲ್ಲಿ ಗಾಳಿಯ ಗುಣಮಟ್ಟ ತೀವ್ರವಾಗಿದೆ (AQI {aqi}) — ಆರೋಗ್ಯ ತುರ್ತುಸ್ಥಿತಿ. ಹೊರಗೆ ಹೋಗುವುದನ್ನು ತಪ್ಪಿಸಿ, "
+              "ಕಿಟಕಿಗಳನ್ನು ಮುಚ್ಚಿ, ಪ್ಯೂರಿಫೈಯರ್ ಚಲಾಯಿಸಿ, ಹೊರಗೆ N95 ಮಾಸ್ಕ್ ಧರಿಸಿ.",
     },
 }
 
@@ -101,8 +134,12 @@ def build_advisory(zone: Zone, forecast: ZoneForecast, attribution: ZoneAttribut
             generated_by = "llm"
 
     if not languages_out:
-        languages_out = {"en": tmpl["en"].format(**fields), "hi": tmpl["hi"].format(**fields)}
-        languages_out = {k: v for k, v in languages_out.items() if k in languages or k == "en"}
+        # deterministic per-language templates — emit every configured language we have
+        # native text for (so Mumbai always gets Marathi, Chennai Tamil, etc.), English always.
+        wanted = set(languages) | {"en"}
+        languages_out = {lang: tmpl[lang].format(**fields) for lang in wanted if lang in tmpl}
+        if "en" not in languages_out:
+            languages_out["en"] = tmpl["en"].format(**fields)
 
     pop = zone.population or 0
     vuln = zone.vulnerable_sites or 0

@@ -85,7 +85,19 @@ def advisory_text(city_id: str) -> str:
     ]
     if worst:
         lines.append(f"Worst area: {worst.zone_name} (AQI {worst.aqi})")
-    lines += [f"Main cause: {dom}", "", _advice_line(aqi), "", f"🔗 Live map: {_APP_URL}"]
+    lines += [f"Main cause: {dom}", "", _advice_line(aqi)]
+
+    # regional-language advisory (Marathi/Bengali/Tamil/Telugu/Kannada per the city)
+    from app.agents.advisory import _RISK, _TEMPLATES
+    city = get_city(city_id)
+    regional = next((l for l in (city.languages if city else []) if l in {"mr", "bn", "ta", "te", "kn"}), None)
+    if regional:
+        band = _RISK.get(h.worst_category if h else "Moderate", "Moderate")
+        tmpl = _TEMPLATES.get(band, {}).get(regional)
+        if tmpl:
+            lines += ["", "🗣️ " + tmpl.format(zone=name, cat=h.worst_category if h else "", aqi=aqi)]
+
+    lines += ["", f"🔗 Live map: {_APP_URL}"]
     return "\n".join(lines)
 
 
