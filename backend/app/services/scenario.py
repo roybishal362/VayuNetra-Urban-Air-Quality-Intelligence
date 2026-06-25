@@ -68,6 +68,32 @@ def city_whatif(city: City, attributions: list[ZoneAttribution], reductions: dic
     }
 
 
+# The 2020 lockdown is a real "natural experiment": traffic ~stopped, industry/construction
+# largely halted. We feed those cuts into our what-if engine and check the predicted PM2.5 drop
+# against the MEASURED drop (~50-55%, CPCB / peer-reviewed) — a sanity check on the simulator.
+_LOCKDOWN = {"vehicular": 0.70, "industrial": 0.50, "dust_construction": 0.90,
+             "biomass_burning": 0.0, "secondary": 0.20}
+
+
+def lockdown_check(city: City, attributions: list[ZoneAttribution]) -> dict:
+    zmap = {z.id: z for z in city.zones}
+    o_pm = n_pm = 0.0
+    for a in attributions:
+        pop = (zmap.get(a.zone_id).population or 1) if zmap.get(a.zone_id) else 1
+        removed = sum(c.concentration * _LOCKDOWN.get(c.source, 0.0) for c in a.contributions)
+        o_pm += a.pm25 * pop
+        n_pm += max(0.0, a.pm25 - removed) * pop
+    predicted = round((1 - n_pm / o_pm) * 100) if o_pm else 0
+    return {
+        "city_id": city.id,
+        "scenario": "COVID-19 lockdown (Apr 2020): traffic ~70%, industry ~50%, construction halted",
+        "predicted_drop_pct": predicted,
+        "measured_drop_pct": 53,
+        "verdict": "in range" if abs(predicted - 53) <= 18 else "off",
+        "source": "Measured: CPCB + peer-reviewed studies, Apr 2020 (~50–55% PM2.5 drop)",
+    }
+
+
 def build_history(city: City, obs: CityObservations, zone_id: str, hours: int = 48) -> ZoneHistory:
     z = next((zz for zz in city.zones if zz.id == zone_id), None)
     zs = obs.zone(zone_id)

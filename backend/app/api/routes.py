@@ -22,7 +22,7 @@ from app.services.compliance import city_compliance, intervention_ledger
 from app.services.blame_graph import blame_graph as build_blame_graph
 from app.services.downscale import factor_at, scale_forecast
 from app.services.intelligence_service import compare_cities, get_city_intelligence, get_model
-from app.services.scenario import build_history, city_whatif, simulate_reduction
+from app.services.scenario import build_history, city_whatif, lockdown_check, simulate_reduction
 
 log = get_logger("vayunetra.api.routes")
 router = APIRouter(prefix="/api")
@@ -160,6 +160,14 @@ def compliance():
 def interventions():
     """Honest ledger of real air-quality interventions and what they actually did to AQI."""
     return intervention_ledger()
+
+
+@router.get("/cities/{cid}/lockdown-check", tags=["intelligence"])
+def lockdown_check_endpoint(cid: str):
+    """Validate the what-if engine vs the 2020 lockdown natural experiment (real measured drop)."""
+    city = _require_city(cid)
+    intel = get_city_intelligence(cid)
+    return lockdown_check(city, intel.attributions)
 
 
 @router.get("/cities/{cid}/blame-graph", tags=["intelligence"])

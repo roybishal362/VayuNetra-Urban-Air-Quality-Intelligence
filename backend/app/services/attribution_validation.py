@@ -54,6 +54,21 @@ for _c in ("bengaluru", "chennai", "hyderabad"):
     REFERENCE[_c] = _INDICATIVE_SOUTH
 
 
+# Official EMISSION inventories (primary emissions by sector). These differ from receptor
+# studies by design: they count what's emitted, not ambient concentration — so they have NO
+# 'secondary' category (it forms in the air, isn't emitted) and weight direct emitters like
+# transport higher. We show this as a second lens, honestly, not as a contradiction.
+EMISSION_INVENTORY: dict[str, dict] = {
+    "delhi": {
+        "citation": "TERI 2018 emission inventory (Delhi-NCR)",
+        "caveat": ("Emission inventories count PRIMARY emissions, not ambient PM2.5 — they have no "
+                   "secondary-aerosol category and rank direct emitters (transport) higher than "
+                   "receptor models. A different, equally valid lens."),
+        "mix": {"vehicular": 39, "industrial": 14, "biomass_burning": 11, "dust_construction": 30},
+    },
+}
+
+
 def city_source_mix(attributions: list[ZoneAttribution]) -> dict[str, float]:
     """City-average % per source across all wards (matches the UI's source mix)."""
     agg: dict[str, float] = {}
@@ -82,8 +97,18 @@ def validate(city_id: str, attributions: list[ZoneAttribution]) -> dict | None:
     n = len(ref["mix"])
     mad = sum(devs) / n if n else 0.0
     agreement = round(max(0.0, 100.0 - 2.0 * mad), 1)   # 2 pts penalty per point of mean deviation
+
+    inv = EMISSION_INVENTORY.get(city_id)
+    inventory = None
+    if inv:
+        inventory = {
+            "citation": inv["citation"], "caveat": inv["caveat"],
+            "rows": [{"source": s, "label": SOURCES[s][0], "ours": round(ours.get(s, 0.0), 1),
+                      "inventory": v} for s, v in inv["mix"].items()],
+        }
+
     return {
         "city_id": city_id, "citation": ref["citation"], "indicative": ref["indicative"],
         "agreement_pct": agreement, "within_range": within, "n_sources": n,
-        "mean_abs_deviation_pp": round(mad, 1), "rows": rows,
+        "mean_abs_deviation_pp": round(mad, 1), "rows": rows, "inventory": inventory,
     }
